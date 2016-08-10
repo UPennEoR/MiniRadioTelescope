@@ -1,4 +1,4 @@
-// WORKING 4/5/2016. LOCK IT DOWN. 
+// Version 10 August 2016
 
 /****************************************************************************** 
 SparkFun Big Easy Driver Basic Demo
@@ -41,6 +41,8 @@ http://www.schmalzhaus.com/EasyDriver/Examples/EasyDriverExamples.html
 
 #define BTX "AAA"
 #define EOT "ZZZ"
+#define BDTX "BDTX"
+#define EDTX "EDTX"
 
 int STP; 
 int DIR; 
@@ -158,6 +160,7 @@ void PrintMenu()
   Serial.println("S turn a number of decimal degrees");
   Serial.println("Z to zero the angle counter");
   Serial.println();
+  Serial.println(EOT);
 }
 
 void PrintState()
@@ -266,7 +269,7 @@ void SetStepMode(char mode)
 
 void TakeSteps(int steps)
 {
-  Serial.println(STP);
+  //Serial.println(STP);
   for(x= 1; x<steps; x++)  
   {
     digitalWrite(STP,HIGH); //Trigger one step forward
@@ -334,30 +337,21 @@ void RotateDegrees(float deg)
   nSteps = Degrees2Steps(deg, 'N');
   nMicroSteps = Degrees2Steps(deg, 'M');
 
-  Serial.println(BTX);
+  //Serial.println(BTX);
   /* Which thing is commanded and how actual degrees are calculated depends on 
   the mode */
   if (stepping_mode == 'N')
   {
+    Serial.println(BDTX);
     TakeSteps(nSteps);
+    Serial.println(EDTX);
     //actual_degrees = Steps2Degrees(nSteps,'N');
   } else
   {
+    Serial.println(BDTX);
     TakeSteps(nMicroSteps);
+    Serial.println(EDTX);
     //actual_degrees = Steps2Degrees(nMicroSteps,'M');
   }
-  Serial.println(EOT);
-  //elCurrSteps += rot_sense * nSteps;
-  //elCurrMicroSteps += rot_sense * nMicroSteps;
-  //elCurrDeg += rot_sense * actual_degrees;
-  /*
-  Serial.print("Current position: ");
-  Serial.print(elCurrSteps);
-  Serial.print(" steps ");
-  Serial.print(elCurrMicroSteps);
-  Serial.print(" micro steps ");
-  Serial.print(elCurrDeg);
-  Serial.println(" degrees"); 
-  */
 }
 

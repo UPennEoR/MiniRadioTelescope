@@ -4,6 +4,20 @@ import pylab as plt
 import time
 import MRTtools as mrt
 
+port='/dev/cu.usbmodem1411'
+baud = 115200
+
+EOT = 'ZZZ\r\n'
+BTX = 'AAA\r\n'
+BDTX = 'BDTX\r\n'
+EDTX = 'EDTX\r\n'
+
+# Open the port
+print 'Opening serial port',port
+print 'with baud',baud
+ser = serial.Serial(port, baud)
+operate = True
+
 # Don't know why this doesn't work
 def clear_ser_buffer():
     buf = []
@@ -21,19 +35,36 @@ def read_ser_buffer_to_eot():
         buf = ser.readline()
     return output
 
-port='/dev/cu.usbmodem1411'
-baud = 9600 # 9600
-EOT = 'ZZZ\r\n'
-BTX = 'AAA\r\n'
+def read_data():
+    # Read what comes back until you see the "begin data transmission"
+    az = []
+    el = []
+    pwr = []
+    buf = ser.readline()
+    print buf
+    while (buf != BDTX):
+        buf = ser.readline()
+        print buf
+    while(buf != EDTX):
+        buf = ser.readline()
+        if (buf != EDTX):
+            a,e,p = buf.split()
+            az.append(a)
+            el.append(e)
+            pwr.append(p)
+        #output.append(buf)
+        print buf
+    #output.pop()
+    az = np.array(az,dtype='float64')
+    el = np.array(el,dtype='float64')
+    pwr = np.array(pwr,dtype='float64')
+    pwr = mrt.zx47_60(pwr)
+    return (az,el,pwr)
 
-# Open the port
-ser = serial.Serial(port, baud)
-operate = True
-
-# Initially clear out the buffer
+""" Initially clear out the buffer.  There is a delay between the initial 
+serial conection and when the Arduino outputs its opening message, so you have 
+to wait """
 dummy = read_ser_buffer_to_eot() 
-#clear_ser_buffer()
-print ser.inWaiting()
 
 while(operate):
     #print_ser_buffer()
@@ -41,19 +72,27 @@ while(operate):
     if not var == 'Q':
         print "Sending "+var
         ser.write(var)
-        if (var == 'a'):
+        if (var == 'S'):
+            deg = raw_input("Enter number of degrees to turn: ")
+            print "Sending "+deg
+            ser.write(deg)
+            print "Reading data"
+            az,el,pwr = read_data()
+            print "Reading remaining buffer"
             dummy = read_ser_buffer_to_eot()
-            for i,d in enumerate(dummy):
-                dummy[i] = float(d.strip())
-            toplot = np.array(dummy)
             plt.figure(1)
             plt.clf()
-            plt.plot(toplot,'o')
-            #plt.draw()
-            plt.show(block=False)
+            plt.plot(az,pwr)
+            plt.show()#block=False)
         else:
-        # Read back any reply
+            # Read back any reply
+            print "Default readback"
             dummy = read_ser_buffer_to_eot()
+    else:
+        operate = False
+
+ser.close()
+    
 #        if var == 'C':
 #            axis = raw_input("First, enter axis: ")
 #            print "Sending "+axis
@@ -85,8 +124,3 @@ while(operate):
 #            pw = mrt.zx47_60(pw)
 #            #print values
 #        else:
-    else:
-        operate = False
-
-ser.close()
-    
