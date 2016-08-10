@@ -39,25 +39,43 @@ http://www.schmalzhaus.com/EasyDriver/Examples/EasyDriverExamples.html
 #define DEGREES_PER_STEP 1.8
 #define MICRO_STEPS 16
 
-int STP; // 2  // ST
-int DIR; // 3 // 3   DR
-int MS1; // 4 // 4  M1
-int MS2; // 5 // 5  M2
-int MS3; // 6// 6  M3
-int EN;  // 7 // 7  EN
+#define BTX "AAA"
+#define EOT "ZZZ"
+
+int STP; 
+int DIR; 
+int MS1; 
+int MS2; 
+int MS3; 
+int EN;  
 
 //Declare variables for functions
 char user_input;
 int x;
 int y;
 // int state;
+
+// Ugh.  Don't actually HAVE the current state of either axis
+
+// Current position of elevation axis
 float elCurrDeg;
 int elCurrSteps;
 int elCurrMicroSteps;
+// Current position of azimuth axis
+float azCurrDeg;
+int azCurrSteps;
+int azCurrMicroSteps;
+
 char stepping_mode; 
 float degrees_to_turn; 
 int rot_sense;
 char current_axis;
+
+int analogPin = 0;
+int val;
+float voltage;
+
+float NormAdd, MicroAdd;
 
 void setup(){
   
@@ -78,18 +96,13 @@ void setup(){
   Serial.begin(115200); //Open Serial connection for debugging
   Serial.println("Begin motor control");
   Serial.println();
-  //Print function list for user selection
-  Serial.println("Enter motor control option:");
-  Serial.println("E for Enable; D for Disable");
-  Serial.println("F for Forward; R for Reverse");
-  Serial.println("A for azimuth; L for elevation");
-  Serial.println("N for normal steps; M for microsteps");
-  Serial.println("S turn a number of decimal degrees");
-  Serial.println("Z to zero the angle counter");
-  Serial.println();
+  PrintMenu();
   elCurrSteps = 0;
   elCurrDeg = 0;
   elCurrMicroSteps = 0;
+  azCurrSteps = 0;
+  azCurrDeg = 0;
+  azCurrMicroSteps = 0;
   stepping_mode = 'N';
   rot_sense = 1;
 }
@@ -129,7 +142,39 @@ void loop() {
         Serial.println("Invalid option entered.");
       }
       //resetBEDPins();
+      PrintState();
+      PrintMenu();
   }
+}
+
+void PrintMenu()
+{
+  //Print function list for user selection
+  Serial.println("Enter motor control option:");
+  Serial.println("E for Enable; D for Disable");
+  Serial.println("F for Forward; R for Reverse");
+  Serial.println("A for azimuth; L for elevation");
+  Serial.println("N for normal steps; M for microsteps");
+  Serial.println("S turn a number of decimal degrees");
+  Serial.println("Z to zero the angle counter");
+  Serial.println();
+}
+
+void PrintState()
+{
+  Serial.println();
+  Serial.print("Active axis: ");
+  if (current_axis=='A'){
+    Serial.println("AZ");
+  } else{
+    Serial.println("EL");
+  }
+  Serial.println("Current position");
+  Serial.print("AZ: ");
+  Serial.print(azCurrDeg);
+  Serial.print("  EL: ");
+  Serial.println(elCurrDeg);
+  Serial.println();
 }
 
 //Reset Big Easy Driver pins to default states
@@ -192,6 +237,13 @@ void SetAxis(char axis)
     EN = ELEN;
     current_axis = 'L';
   }
+  Serial.print("Set axis to ");
+  if (current_axis=='A'){
+    Serial.println("AZ");
+  } else{
+    Serial.println("EL");
+  }
+  
 }
 
 void SetStepMode(char mode)
@@ -214,12 +266,40 @@ void SetStepMode(char mode)
 
 void TakeSteps(int steps)
 {
-  for(x= 1; x<steps; x++)  //Loop the forward stepping enough times for motion to be visible
+  Serial.println(STP);
+  for(x= 1; x<steps; x++)  
   {
     digitalWrite(STP,HIGH); //Trigger one step forward
-    delay(1);
+    delay(2);
     digitalWrite(STP,LOW); //Pull step pin low so it can be triggered again
-    delay(1);
+    delay(2);
+
+    if (stepping_mode == 'M'){
+      NormAdd = 1./16.;
+      MicroAdd = 1;
+    } 
+    else {
+      NormAdd = 1;
+      MicroAdd = 16; 
+    }
+    if (current_axis == 'L'){
+      elCurrSteps += rot_sense * NormAdd;
+      elCurrMicroSteps += rot_sense * MicroAdd;
+      elCurrDeg += rot_sense * Steps2Degrees(1,stepping_mode);
+    } else{
+      azCurrSteps += rot_sense * NormAdd;
+      azCurrMicroSteps += rot_sense * MicroAdd;
+      azCurrDeg += rot_sense * Steps2Degrees(1,stepping_mode);
+    }
+
+    // Read the ADC for the radiometer
+    val = analogRead(analogPin);
+    voltage = 5.0*val/1024.;
+    Serial.print(azCurrDeg,5);
+    Serial.print("  ");
+    Serial.print(elCurrDeg,5);
+    Serial.print("  ");
+    Serial.println(voltage,5);
   }
 }
 
@@ -244,32 +324,33 @@ float Steps2Degrees(int steps, char mode){
 void RotateDegrees(float deg)
 {
   int nSteps, nMicroSteps;
-  float actual_degrees;
+  //float actual_degrees;
   
-  Serial.print("Turning ");
-  Serial.print(deg);
-  Serial.println(" degrees.");
+  //Serial.print("Turning ");
+  //Serial.print(deg);
+  //Serial.println(" degrees.");
   
   // Calculate both steps and microsteps
   nSteps = Degrees2Steps(deg, 'N');
   nMicroSteps = Degrees2Steps(deg, 'M');
 
+  Serial.println(BTX);
   /* Which thing is commanded and how actual degrees are calculated depends on 
   the mode */
   if (stepping_mode == 'N')
   {
     TakeSteps(nSteps);
-    actual_degrees = Steps2Degrees(nSteps,'N');
+    //actual_degrees = Steps2Degrees(nSteps,'N');
   } else
   {
     TakeSteps(nMicroSteps);
-    actual_degrees = Steps2Degrees(nMicroSteps,'M');
+    //actual_degrees = Steps2Degrees(nMicroSteps,'M');
   }
-
-  elCurrSteps += rot_sense * nSteps;
-  elCurrMicroSteps += rot_sense * nMicroSteps;
-  elCurrDeg += rot_sense * actual_degrees;
-
+  Serial.println(EOT);
+  //elCurrSteps += rot_sense * nSteps;
+  //elCurrMicroSteps += rot_sense * nMicroSteps;
+  //elCurrDeg += rot_sense * actual_degrees;
+  /*
   Serial.print("Current position: ");
   Serial.print(elCurrSteps);
   Serial.print(" steps ");
@@ -277,5 +358,6 @@ void RotateDegrees(float deg)
   Serial.print(" micro steps ");
   Serial.print(elCurrDeg);
   Serial.println(" degrees"); 
+  */
 }
 

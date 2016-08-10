@@ -114,8 +114,8 @@ void loop()
 {
   // printGyro();  // Print "G: gx, gy, gz"
   // Serial.print(", ");
-  printAccel(); // Print "A: ax, ay, az
-  Serial.print(", ");
+  //printAccel(); // Print "A: ax, ay, az
+  //Serial.print(", ");
   printMag();   // Print "M: mx, my, mz"
   
   // Print the heading and orientation for fun!
@@ -171,11 +171,11 @@ void printAccel()
   // If you want to print calculated values, you can use the
   // calcAccel helper function to convert a raw ADC value to
   // g's. Give the function the value that you want to convert.
-  Serial.print(imu.calcAccel(imu.ax), 4);
-  Serial.print(", ");
+  //Serial.print(imu.calcAccel(imu.ax), 4);
+  //Serial.print(", ");
   Serial.print(imu.calcAccel(imu.ay), 4);
-  Serial.print(", ");
-  Serial.print(imu.calcAccel(imu.az), 4);
+  //Serial.print(", ");
+  //Serial.print(imu.calcAccel(imu.az), 4);
   //Serial.println(" g");
 #elif defined PRINT_RAW 
   Serial.print(imu.ax);
@@ -201,11 +201,11 @@ void printMag()
   // If you want to print calculated values, you can use the
   // calcMag helper function to convert a raw ADC value to
   // Gauss. Give the function the value that you want to convert.
-  Serial.print(imu.calcMag(imu.mx), 4);
-  Serial.print(", ");
+  //Serial.print(imu.calcMag(imu.mx), 4);
+  //Serial.print(", ");
   Serial.print(imu.calcMag(imu.my), 4);
-  Serial.print(", ");
-  Serial.print(imu.calcMag(imu.mz), 4);
+  //Serial.print(", ");
+  //Serial.print(imu.calcMag(imu.mz), 4);
   //Serial.println(" gauss");
 #elif defined PRINT_RAW
   Serial.print(imu.mx);
