@@ -16,9 +16,10 @@ void setup() {
   digitalWrite(ELEN, HIGH); 
   digitalWrite(AZEN, HIGH); 
   Serial.begin(9600);
+  //
   Serial.println("Testing serial back and forth");
-  
   Serial.println(EOT);
+  
 }
 
 void loop() {
@@ -29,12 +30,12 @@ void loop() {
   while(Serial.available()){
       user_input = Serial.read();
       if (user_input == 'n'){
-          // This is a rather stupid way of saying: 
-          // wait until you hear something before proceeding
+          //
           Serial.println("Enter float: ");
           Serial.println(EOT);
           while (Serial.available()==0){ }
           flt = Serial.parseFloat();
+          //
           Serial.print("Printing input float: ");
           Serial.println(flt);
           Serial.println(EOT);
