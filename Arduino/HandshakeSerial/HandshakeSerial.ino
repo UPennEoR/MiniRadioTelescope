@@ -4,8 +4,8 @@ float flt;
 #define ELEN  7  
 #define AZEN  10 
 
-#define BTX "BTX"
-#define ETX "ETX"
+#define BTX "BDTX"
+#define ETX "EDTX"
 #define RCVD 'R'
 #define EOT "ZZZ"
 
@@ -36,20 +36,17 @@ void loop() {
       user_input = Serial.read();
       if (user_input == 'n'){
           //
-          Serial.println("Enter number of data points to transmit: ");
-          Serial.println(EOT);
+          //Serial.println("Enter number of data points to transmit: ");
+          //Serial.println(EOT);
           while (Serial.available()==0){ }
           flt = Serial.parseFloat();
           for(x=1; x<int(flt); x++){
             Serial.print("Sample ");
-            Serial.println(x);
+            Serial.print(x);
             Serial.print(" of ");
             Serial.println(int(flt));
             Handshake();
           }
-          //
-          Serial.print("Printing input float: ");
-          Serial.println(flt);
           Serial.println(EOT);
       }  
       else {
@@ -69,15 +66,15 @@ void Handshake(){
   Serial.println(ETX);
   received = false;
   while(!received){
-    Serial.println("Waiting for verification");
+    //Serial.println("Waiting for verification");
     while (Serial.available()==0){ }
     rcvd_val = Serial.read();
-    Serial.println(rcvd_val);
-    Serial.println(received);
+    //Serial.println(rcvd_val);
+    //Serial.println(received);
     if (rcvd_val == 'R'){
-      Serial.println("Transmission verified");
+      //Serial.println("Transmission verified");
       received=true;
-      Serial.println(received);
+      //Serial.println(received);
     }
   }
 }

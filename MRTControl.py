@@ -61,6 +61,29 @@ def read_data():
     pwr = mrt.zx47_60(pwr)
     return (az,el,pwr)
 
+def read_data_handshake():
+    # Read what comes back until you see the "begin data transmission"
+    val = []
+    buf = ser.readline()
+    print buf
+    if (buf == EOT):
+        cont = False
+    else:
+        cont = True
+    while (cont):
+        while (buf != BDTX):
+            buf = ser.readline()
+            print buf
+        while(buf != EDTX):
+            buf = ser.readline()
+            if (buf != EDTX):
+                v = buf.split()
+                val.append(v)
+            print buf
+        print 'Got data', v
+        ser.write('R')
+    return val
+
 """ Initially clear out the buffer.  There is a delay between the initial 
 serial conection and when the Arduino outputs its opening message, so you have 
 to wait """
@@ -84,6 +107,14 @@ while(operate):
             plt.clf()
             plt.plot(az,pwr)
             plt.show()#block=False)
+        if (var == 'n'):
+            deg = raw_input("Enter number of data points: ")
+            print "Sending "+deg
+            ser.write(deg)
+            print "Reading data"
+            val = read_data_handshake()
+#            print "Reading remaining buffer"
+#            dummy = read_ser_buffer_to_eot()
         else:
             # Read back any reply
             print "Default readback"
