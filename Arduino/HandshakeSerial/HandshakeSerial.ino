@@ -40,7 +40,7 @@ void loop() {
           //Serial.println(EOT);
           while (Serial.available()==0){ }
           flt = Serial.parseFloat();
-          for(x=1; x<int(flt); x++){
+          for(x=1; x<=int(flt); x++){
             Serial.print("Sample ");
             Serial.print(x);
             Serial.print(" of ");

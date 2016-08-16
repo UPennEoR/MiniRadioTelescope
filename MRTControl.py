@@ -66,22 +66,21 @@ def read_data_handshake():
     val = []
     buf = ser.readline()
     print buf
-    if (buf == EOT):
-        cont = False
-    else:
-        cont = True
-    while (cont):
+    while(buf != EOT):
         while (buf != BDTX):
             buf = ser.readline()
             print buf
         while(buf != EDTX):
             buf = ser.readline()
             if (buf != EDTX):
-                v = buf.split()
-                val.append(v)
+                v = buf.strip()
+                val.append(float(v))
             print buf
         print 'Got data', v
         ser.write('R')
+        buf = ser.readline()
+        print buf
+    val = np.array(val)
     return val
 
 """ Initially clear out the buffer.  There is a delay between the initial 
@@ -108,9 +107,9 @@ while(operate):
             plt.plot(az,pwr)
             plt.show()#block=False)
         if (var == 'n'):
-            deg = raw_input("Enter number of data points: ")
-            print "Sending "+deg
-            ser.write(deg)
+            npts = raw_input("Enter number of data points: ")
+            print "Sending "+npts
+            ser.write(npts)
             print "Reading data"
             val = read_data_handshake()
 #            print "Reading remaining buffer"
