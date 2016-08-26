@@ -4,29 +4,47 @@ import pylab as plt
 import time
 import MRTtools as mrt
 
-port='/dev/cu.usbmodem1411'
+# Don't yet have a good way of auto-detecting which port is Arduino
+#port='/dev/cu.usbmodem1411'
+port = '/dev/ttyACM0'
 baud = 115200
+nIDBytes = 18
 
 EOT = 'ZZZ\r\n'
 BTX = 'AAA\r\n'
 BDTX = 'BDTX\r\n'
 EDTX = 'EDTX\r\n'
 
-# Open the port
-print 'Opening serial port',port
-print 'with baud',baud
-ser = serial.Serial(port, baud)
-operate = True
+# Best practices for opening the serial port with reset
 
-# Don't know why this doesn't work
-def clear_ser_buffer():
-    buf = []
-    while (ser.inWaiting() != 0):
-        buf.append(ser.read())
-    print buf
+def WaitForInputBytes(timeout=10,nbytesExpected=1):
+    """ Wait for bytes to appear on the input serial buffer up to the timeout
+    specified, in seconds """
+    bytesFound=False
+    t0 = time.time()
+    dt = time.time()-t0
+    while (not bytesFound and dt < timeout):
+        nbytes = ser.inWaiting()
+        if nbytes > nbytesExpected:
+            bytesFound = True
+        dt = time.time()-t0
+    return nbytes, dt
+
+def ResetArduinoUno(ser,timeout=10,nbytesExpected=1):
+    ser.setDTR(False)
+    time.sleep(1)
+    ser.setDTR(True)
+    #time.sleep(3)
+    nbytes,dt=WaitForInputBytes(nbytesExpected=nbytesExpected)
+    print nbytes,'bytes found after',dt,'seconds'
     return
 
-def read_ser_buffer_to_eot():
+def FlushSerialBuffers(ser):
+    ser.flushInput()
+    ser.flushOutput()
+    return
+
+def read_ser_buffer_to_eot(ser):
     output = []
     buf = ser.readline()
     while(buf != EOT):
@@ -35,7 +53,7 @@ def read_ser_buffer_to_eot():
         buf = ser.readline()
     return output
 
-def read_data():
+def read_data(ser):
     # Read what comes back until you see the "begin data transmission"
     az = []
     el = []
@@ -61,7 +79,7 @@ def read_data():
     pwr = mrt.zx47_60(pwr)
     return (az,el,pwr)
 
-def read_data_handshake():
+def read_data_handshake(ser):
     # Read what comes back until you see the "begin data transmission"
     val = []
     buf = ser.readline()
@@ -83,11 +101,33 @@ def read_data_handshake():
     val = np.array(val)
     return val
 
-""" Initially clear out the buffer.  There is a delay between the initial 
-serial conection and when the Arduino outputs its opening message, so you have 
-to wait """
-dummy = read_ser_buffer_to_eot() 
+# ----------------------------------------------------------------------------
+# Begin
+# ----------------------------------------------------------------------------
+# Notify the user
+print 'Opening serial port',port
+print 'with baud',baud
+""" For reasons unclear, the Mac appears to assert DTR on serial connection,
+whereas the Pi does not.  So we will be super explicit. """
+# Open the port
+ser = serial.Serial(port, baud)
+print 'Before flushing buffers'
+print 'Bytes in waiting', ser.inWaiting()
+FlushSerialBuffers(ser)
+print 'After flushing buffers'
+print 'Bytes in waiting', ser.inWaiting()
+print
+print 'Resetting Arduino'
+print 'Before reset'
+print 'Bytes in waiting', ser.inWaiting()
+ResetArduinoUno(ser,timeout=15,nbytesExpected=nIDBytes)
+# I don't understand why ARDUINO MRT is 18 bytes ...
+print 'After reset'
+print 'Bytes in waiting', ser.inWaiting()
+print ser.inWaiting()
+read_ser_buffer_to_eot(ser)
 
+operate=True
 while(operate):
     #print_ser_buffer()
     var = raw_input("Enter command to transmit, Q to quit: ")
@@ -99,9 +139,9 @@ while(operate):
             print "Sending "+deg
             ser.write(deg)
             print "Reading data"
-            az,el,pwr = read_data()
+            az,el,pwr = read_data(ser)
             print "Reading remaining buffer"
-            dummy = read_ser_buffer_to_eot()
+            dummy = read_ser_buffer_to_eot(ser)
             plt.figure(1)
             plt.clf()
             plt.plot(az,pwr)
@@ -111,7 +151,7 @@ while(operate):
             print "Sending "+npts
             ser.write(npts)
             print "Reading data"
-            val = read_data_handshake()
+            val = read_data_handshake(ser)
 #            print "Reading remaining buffer"
 #            dummy = read_ser_buffer_to_eot()
         else:

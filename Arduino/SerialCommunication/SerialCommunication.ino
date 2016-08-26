@@ -15,9 +15,9 @@ void setup() {
   pinMode(AZEN, OUTPUT);
   digitalWrite(ELEN, HIGH); 
   digitalWrite(AZEN, HIGH); 
-  Serial.begin(9600);
+  Serial.begin(115200);
   //
-  Serial.println("Testing serial back and forth");
+  Serial.println("ARDUINO MRT");
   Serial.println(EOT);
   
 }
@@ -45,7 +45,9 @@ void loop() {
             Serial.println(micros() - sec0);
           }
           Serial.println(EOT);
-      } 
+      } else if (user_input == 'Q'){
+          Serial.println("ARDUINO MRT");
+      }
       else {
           Serial.println("Printing user input");
           Serial.println(user_input);

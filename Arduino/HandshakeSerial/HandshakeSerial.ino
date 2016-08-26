@@ -22,7 +22,7 @@ void setup() {
   digitalWrite(AZEN, HIGH); 
   Serial.begin(115200);
   //
-  Serial.println("Testing serial back and forth");
+  Serial.println("ARDUINO MRT");
   Serial.println(EOT);
   
 }
