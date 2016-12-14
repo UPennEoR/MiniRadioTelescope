@@ -1,3 +1,5 @@
+# Working version as of 14 December 2016
+
 import serial
 import numpy as np
 import pylab as plt
@@ -5,8 +7,8 @@ import time
 import MRTtools as mrt
 
 # Don't yet have a good way of auto-detecting which port is Arduino
-#port='/dev/cu.usbmodem1411'
-port = '/dev/ttyACM0'
+port='/dev/cu.usbmodem1421'
+#port = '/dev/ttyACM0'
 baud = 115200
 nIDBytes = 18
 
@@ -25,7 +27,7 @@ def WaitForInputBytes(timeout=10,nbytesExpected=1):
     dt = time.time()-t0
     while (not bytesFound and dt < timeout):
         nbytes = ser.inWaiting()
-        if nbytes > nbytesExpected:
+        if nbytes == nbytesExpected:
             bytesFound = True
         dt = time.time()-t0
     return nbytes, dt
@@ -146,18 +148,18 @@ while(operate):
             plt.clf()
             plt.plot(az,pwr)
             plt.show()#block=False)
-        if (var == 'n'):
-            npts = raw_input("Enter number of data points: ")
-            print "Sending "+npts
-            ser.write(npts)
-            print "Reading data"
-            val = read_data_handshake(ser)
+#        if (var == 'n'):
+#            npts = raw_input("Enter number of data points: ")
+#            print "Sending "+npts
+#            ser.write(npts)
+#            print "Reading data"
+#            val = read_data_handshake(ser)
 #            print "Reading remaining buffer"
 #            dummy = read_ser_buffer_to_eot()
         else:
             # Read back any reply
             print "Default readback"
-            dummy = read_ser_buffer_to_eot()
+            dummy = read_ser_buffer_to_eot(ser)
     else:
         operate = False
 

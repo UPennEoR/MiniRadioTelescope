@@ -1,0 +1,33 @@
+Battery supplies 14.5 - 15 V (fully charged) at a maximum of 5.4 A
+Total power is then about 75 W
+
+Raspberry Pi
+www.raspberrypi.org/help/faqs
+
+The Pi Model B (current version) needs 1.2 A and can supply
+500 mA total USB draw
+
+The Pi3 Model B is 2.5 A and 1.2 A from the USB. 
+
+So Pi / Pi3 would draw 0.5/1 A at 12 V, assuming 100% efficiency on
+the voltage conversion.
+
+We are running an Arduino and mouse / keyboard.  No idea what the
+current draw is for the mouse / keyboard.  Mouse 5 V / 100 mA, but
+keyboard says 5 V / 1.5 A (seems high)
+
+Arduino Uno is either powered from USB (5 V, current up to the limit
+of the Pi), or externally.  Recommendations are 9 - 12 V, 0.5 - 1 A
+(!) depending on what you're doing.  20 mA per I/O pin.  We're
+currently using 13 I/O pins.  The 3.3 V power (for the sensor card)
+will add another 50 mA.  Altogether sounds like ~300 mA (1.5 W).  Does
+that make sense?
+
+https://www.arduino.cc/en/Main/ArduinoBoardUno
+http://playground.arduino.cc/Learning/WhatAdapter
+
+Finally, the motors draw up to 2 A / phase at 3.2 V.  An upper limit
+on the power draw is then ~12 W.  The board is operated at 15 V, so it
+must be pulling ~1 A if it were 100% efficient.  Assume the board
+draws 1.5 - 2 A.
+

@@ -19,7 +19,7 @@ class SerialData(object):
         try:
             self.ser = ser = serial.Serial(
                 port='/dev/cu.usbmodem1411', #'/dev/ttyACM0',
-                baudrate=115200 #, #9600,
+                baudrate=9600 #, #9600,
                 #bytesize=serial.EIGHTBITS,
                 #parity=serial.PARITY_NONE,
                 #stopbits=serial.STOPBITS_ONE,
