@@ -13,63 +13,7 @@ baud = 115200
 nIDBytes = 18
 
 EOT = 'ZZZ\r\n'
-BTX = 'AAA\r\n'
-BDTX = 'BDTX\r\n'
-EDTX = 'EDTX\r\n'
-
-# Best practices for opening the serial port with reset
-
-def WaitForInputBytes(timeout=10,nbytesExpected=1):
-    """ Wait for bytes to appear on the input serial buffer up to the timeout
-    specified, in seconds """
-    bytesFound=False
-    t0 = time.time()
-    dt = time.time()-t0
-    while (not bytesFound and dt < timeout):
-        nbytes = ser.inWaiting()
-        if nbytes == nbytesExpected:
-            bytesFound = True
-        dt = time.time()-t0
-    return nbytes, dt
-
-def ResetArduinoUno(ser,timeout=10,nbytesExpected=1):
-    ser.setDTR(False)
-    time.sleep(1)
-    ser.setDTR(True)
-    #time.sleep(3)
-    nbytes,dt=WaitForInputBytes(nbytesExpected=nbytesExpected)
-    print nbytes,'bytes found after',dt,'seconds'
-    return
-
-def FlushSerialBuffers(ser):
-    ser.flushInput()
-    ser.flushOutput()
-    return
-
-def read_ser_buffer_to_eot(ser):
-    output = []
-    buf = ser.readline()
-    while(buf != EOT):
-        output.append(buf)
-        print buf
-        buf = ser.readline()
-    return output
-
-def read_data(ser):
-    # Read what comes back until you see the "begin data transmission"
-    az = []
-    el = []
-    pwr = []
-    buf = ser.readline()
-    print buf
-    while (buf != BDTX):
-        buf = ser.readline()
-        print buf
-    while(buf != EDTX):
-        buf = ser.readline()
-        if (buf != EDTX):
-            a,e,p = buf.split()
-            az.append(a)
+BTX = 'AAA\r\n'(a)
             el.append(e)
             pwr.append(p)
         #output.append(buf)

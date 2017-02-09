@@ -31,3 +31,7 @@ on the power draw is then ~12 W.  The board is operated at 15 V, so it
 must be pulling ~1 A if it were 100% efficient.  Assume the board
 draws 1.5 - 2 A.
 
+Empirically, we seem to need about 900 mA - 1 A at 14 V for just the
+motors (with the elevation drive drawing significantly more current
+(about 500 mA) than the elevation drive (~100 mA).  The "motors off"
+current is about 250 mA for the two boards.
