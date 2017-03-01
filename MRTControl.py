@@ -158,6 +158,8 @@ while(operate):
             if (current_axis == 'az'):
                 x = az
             plt.plot(x,pwr)
+            N = 10
+            plt.plot(x,np.convolve(pwr, np.ones((N,))/N, mode='same'),'r')
             plt.show()#block=False)
 #        if (var == 'n'):
 #            npts = raw_input("Enter number of data points: ")
