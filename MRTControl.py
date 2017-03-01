@@ -7,7 +7,8 @@ import time
 import MRTtools as mrt
 
 # Don't yet have a good way of auto-detecting which port is Arduino
-port='/dev/cu.usbmodem1411'
+port='/dev/cu.usbmodem1421'
+#port='/dev/cu.usbmodem1411'
 #port = '/dev/ttyACM0'
 baud = 115200
 nIDBytes = 18
@@ -129,6 +130,8 @@ print 'Bytes in waiting', ser.inWaiting()
 print ser.inWaiting()
 read_ser_buffer_to_eot(ser)
 
+current_axis = None
+
 operate=True
 while(operate):
     #print_ser_buffer()
@@ -136,6 +139,10 @@ while(operate):
     if not var == 'Q':
         print "Sending "+var
         ser.write(var)
+        if (var == 'L'):
+            current_axis = 'el'
+        if (var == 'A'):
+            current_axis = 'az'
         if (var == 'S'):
             deg = raw_input("Enter number of degrees to turn: ")
             print "Sending "+deg
@@ -146,7 +153,11 @@ while(operate):
             dummy = read_ser_buffer_to_eot(ser)
             plt.figure(1)
             plt.clf()
-            plt.plot(az,pwr)
+            if (current_axis == 'el'):
+                x = el
+            if (current_axis == 'az'):
+                x = az
+            plt.plot(x,pwr)
             plt.show()#block=False)
 #        if (var == 'n'):
 #            npts = raw_input("Enter number of data points: ")
