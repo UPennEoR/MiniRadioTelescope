@@ -7,8 +7,8 @@ import time
 import MRTtools as mrt
 
 # Don't yet have a good way of auto-detecting which port is Arduino
-port='/dev/cu.usbmodem1421'
-#port='/dev/cu.usbmodem1411'
+#port='/dev/cu.usbmodem1421'
+port='/dev/cu.usbmodem1411'
 #port = '/dev/ttyACM0'
 baud = 115200
 nIDBytes = 18
@@ -82,6 +82,27 @@ def read_data(ser):
     pwr = mrt.zx47_60(pwr)
     return (az,el,pwr)
 
+def read_data_rx(ser):
+    # Read what comes back until you see the "begin data transmission"
+    pwr = []
+    volt = []
+    buf = ser.readline()
+    print buf
+    while (buf != BDTX):
+        buf = ser.readline()
+        print buf
+    while(buf != EDTX):
+        buf = ser.readline()
+        if (buf != EDTX):
+            v = buf #buf.split()
+            pwr.append(v)
+            volt.append(v)
+        print buf
+    pwr = np.array(pwr,dtype='float64')
+    volt = np.array(volt,dtype='float64')
+    pwr = mrt.zx47_60(pwr)
+    return (volt,pwr)
+    
 def read_data_handshake(ser):
     # Read what comes back until you see the "begin data transmission"
     val = []
@@ -160,7 +181,24 @@ while(operate):
             plt.plot(x,pwr)
             N = 10
             plt.plot(x,np.convolve(pwr, np.ones((N,))/N, mode='same'),'r')
-            plt.show()#block=False)
+            plt.show()
+        if (var == 'X'):
+            ndata = raw_input("Enter number of data points: ")
+            print "Sending "+ndata
+            ser.write(ndata)
+            print "Reading data"
+            volt,pwr = read_data_rx(ser)
+            print "Reading remaining buffer"
+            dummy = read_ser_buffer_to_eot(ser)
+            plt.figure(1)
+            plt.clf()
+            plt.plot(pwr)
+            print 'Mean voltage',volt.mean(),'St dev',volt.std()
+            print 'Mean power',pwr.mean(),'St dev',pwr.std()
+            #N = 10
+            #plt.plot(x,np.convolve(pwr, np.ones((N,))/N, mode='same'),'r')
+            plt.show()    
+
 #        if (var == 'n'):
 #            npts = raw_input("Enter number of data points: ")
 #            print "Sending "+npts
