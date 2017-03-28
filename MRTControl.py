@@ -7,8 +7,8 @@ import time
 import MRTtools as mrt
 
 # Don't yet have a good way of auto-detecting which port is Arduino
-#port='/dev/cu.usbmodem1421'
-port='/dev/cu.usbmodem1411'
+port='/dev/cu.usbmodem1421'
+#port='/dev/cu.usbmodem1411'
 #port = '/dev/ttyACM0'
 baud = 115200
 nIDBytes = 18
@@ -151,7 +151,10 @@ print 'Bytes in waiting', ser.inWaiting()
 print ser.inWaiting()
 read_ser_buffer_to_eot(ser)
 
-current_axis = None
+# Initialize the axis
+ser.write('A')
+current_axis = 'az'
+dummy = read_ser_buffer_to_eot(ser)
 
 operate=True
 while(operate):
@@ -170,8 +173,6 @@ while(operate):
             ser.write(deg)
             print "Reading data"
             az,el,pwr = read_data(ser)
-            print "Reading remaining buffer"
-            dummy = read_ser_buffer_to_eot(ser)
             plt.figure(1)
             plt.clf()
             if (current_axis == 'el'):
@@ -182,7 +183,9 @@ while(operate):
             N = 10
             plt.plot(x,np.convolve(pwr, np.ones((N,))/N, mode='same'),'r')
             plt.show()
-        if (var == 'X'):
+            print "Reading remaining buffer"
+            dummy = read_ser_buffer_to_eot(ser)
+        elif (var == 'X'):
             ndata = raw_input("Enter number of data points: ")
             print "Sending "+ndata
             ser.write(ndata)
