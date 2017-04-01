@@ -1,4 +1,5 @@
-// Updated and tested with Arduino not connected to telescope 27 March 2017
+// BETA VERSION
+// Nominally working 27 March 2017
 
 /****************************************************************************** 
 SparkFun Big Easy Driver Basic Demo

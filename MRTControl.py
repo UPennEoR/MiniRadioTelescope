@@ -1,4 +1,4 @@
-# Working version as of 14 December 2016
+# verified 1 April 2017: working
 
 import serial
 import numpy as np
@@ -7,8 +7,8 @@ import time
 import MRTtools as mrt
 
 # Don't yet have a good way of auto-detecting which port is Arduino
-port='/dev/cu.usbmodem1421'
-#port='/dev/cu.usbmodem1411'
+#port='/dev/cu.usbmodem1421'
+port='/dev/cu.usbmodem1411'
 #port = '/dev/ttyACM0'
 baud = 115200
 nIDBytes = 18
@@ -52,7 +52,7 @@ def read_ser_buffer_to_eot(ser):
     buf = ser.readline()
     while(buf != EOT):
         output.append(buf)
-        print buf
+        print buf[:-1]
         buf = ser.readline()
     return output
 
@@ -74,7 +74,7 @@ def read_data(ser):
             el.append(e)
             pwr.append(p)
         #output.append(buf)
-        print buf
+        #print buf
     #output.pop()
     az = np.array(az,dtype='float64')
     el = np.array(el,dtype='float64')

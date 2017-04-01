@@ -72,6 +72,7 @@ char stepping_mode;
 float degrees_to_turn; 
 int rot_sense;
 char current_axis;
+//char rot_dir // How does one get a string variable?
 
 int analogPin = 0;
 int val;
@@ -180,6 +181,21 @@ void PrintState()
   } else{
     Serial.println("EL");
   }
+  Serial.print("Rotation sense: ");
+  // Ugly.  Gotta have a better way of knowing the internal state
+  if (current_axis=='A'){
+    if (rot_sense==1){
+      Serial.println("CCW");
+    } else {
+      Serial.println("CW");
+    }
+  } else{
+    if (rot_sense ==1){
+      Serial.println("Inc");
+    } else {
+      Serial.println("Dec");
+    }
+  }
   Serial.println("Current position");
   Serial.print("AZ: ");
   Serial.print(azCurrDeg);
@@ -219,6 +235,7 @@ void SetDirection(char direction)
   {
     digitalWrite(DIR, LOW); //Pull direction pin low to move "forward"
     rot_sense = 1;
+    
     Serial.println("Direction set to forward.");
   }
   else if (direction == 'R')
