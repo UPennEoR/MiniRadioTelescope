@@ -74,7 +74,7 @@ def read_data(ser):
             el.append(e)
             pwr.append(p)
         #output.append(buf)
-        #print buf
+        print buf
     #output.pop()
     az = np.array(az,dtype='float64')
     el = np.array(el,dtype='float64')
@@ -173,6 +173,7 @@ while(operate):
             ser.write(deg)
             print "Reading data"
             az,el,pwr = read_data(ser)
+            np.savez(file=time.ctime().replace(' ','_')+'.npz',az=az,el=el,pwr=pwr)
             plt.figure(1)
             plt.clf()
             if (current_axis == 'el'):

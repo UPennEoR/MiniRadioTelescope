@@ -298,9 +298,9 @@ void TakeSteps(int steps)
   for(x= 1; x<steps; x++)  
   {
     digitalWrite(STP,HIGH); //Trigger one step forward
-    delay(2);
+    delay(1);
     digitalWrite(STP,LOW); //Pull step pin low so it can be triggered again
-    delay(2);
+    delay(1);
 
     if (stepping_mode == 'M'){
       NormAdd = 1./16.;
