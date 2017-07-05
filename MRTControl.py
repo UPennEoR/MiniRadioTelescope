@@ -173,6 +173,9 @@ while(operate):
             ser.write(deg)
             print "Reading data"
             az,el,pwr = read_data(ser)
+            # Calibration
+            el = el + 5.
+            az = az + 241.
             np.savez(file=time.ctime().replace(' ','_')+'.npz',az=az,el=el,pwr=pwr)
             plt.figure(1)
             plt.clf()
