@@ -32,3 +32,7 @@ for i,filename in enumerate(filenames):
     plt.title(filename)
     plt.xlabel(d['aa']+' scan (deg)')
     plt.ylabel(r'Power ($\mu$W)')
+    
+    
+# Calibration seems to be roughly 300 K = 17 microW
+# El_true = El_measured + 4. (for the 15:56:03 data)
