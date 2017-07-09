@@ -23,10 +23,20 @@ def readMRT(filename):
         d['aa'] = 'az'
     return d
 
-filenames = glob('Fri_Jun_30_*.npz')
+dat = {}
+#filenames = glob('Fri_Jun_30_*.npz')
+# These are the useful ones
+#[s + mystring for s in mylist]
+filenames = ['45:26','46:08','47:56','48:18','54:16','55:12','56:08','56:44','58:49']
+filenames = ['Fri_Jun_30_15:'+s for s in filenames]
+filenames = [s+'_2017.npz' for s in filenames]
+
+#%%
+
 for i,filename in enumerate(filenames):
-    d = readMRT(filename)
-    plt.figure(i)
+    dat[filename] = readMRT(filename)
+    d = dat[filename]
+    plt.figure(i+1)
     plt.clf()
     plt.plot(d[d['aa']],d['pwr'])
     plt.title(filename)
