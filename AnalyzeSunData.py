@@ -38,10 +38,10 @@ for i,filename in enumerate(filenames):
     d = dat[filename]
     plt.figure(i+1)
     plt.clf()
-    plt.plot(d[d['aa']],d['pwr'])
+    plt.plot(d[d['aa']],d['pwr']*300./17.)
     plt.title(filename)
     plt.xlabel(d['aa']+' scan (deg)')
-    plt.ylabel(r'Power ($\mu$W)')
+    plt.ylabel(r'Antenna Temperature (K)')#Power ($\mu$W)')
     
     
 # Calibration seems to be roughly 300 K = 17 microW

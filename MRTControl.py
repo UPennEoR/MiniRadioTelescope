@@ -7,8 +7,8 @@ import time
 import MRTtools as mrt
 
 # Don't yet have a good way of auto-detecting which port is Arduino
-#port='/dev/cu.usbmodem1421'
-port='/dev/cu.usbmodem1411'
+port='/dev/cu.usbmodem1421'
+#port='/dev/cu.usbmodem1411'
 #port = '/dev/ttyACM0'
 baud = 115200
 nIDBytes = 18
@@ -174,8 +174,8 @@ while(operate):
             print "Reading data"
             az,el,pwr = read_data(ser)
             # Calibration
-            el = el + 5.
-            az = az + 241.
+            #el = el + 5.
+            #az = az + 241.
             np.savez(file=time.ctime().replace(' ','_')+'.npz',az=az,el=el,pwr=pwr)
             plt.figure(1)
             plt.clf()
