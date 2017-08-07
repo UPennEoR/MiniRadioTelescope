@@ -63,6 +63,6 @@ plt.figure(2)
 plt.clf()
 plt.plot(f_all,10.*np.log10(psd_all/flags_all))
 
-#sdr.close()
-#plt.show()
+sdr.close()
+plt.show()
 
