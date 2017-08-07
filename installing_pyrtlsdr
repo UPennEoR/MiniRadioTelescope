@@ -36,7 +36,7 @@ sudo make install
 
 
 
-libusb seems to be already installed:
+libusb seems to be already installed, but the wrong version (?).  Get the "right" one:
 
 pi@raspberrypi:~/librtlsdr/build $ sudo apt-get install libusb-1.0-0
 Reading package lists... Done
@@ -45,3 +45,7 @@ Reading state information... Done
 libusb-1.0-0 is already the newest version.
 libusb-1.0-0 set to manually installed.
 0 upgraded, 0 newly installed, 0 to remove and 206 not upgraded.
+
+Then follow Paul's instructions, BUT:
+
+cmake ../ -DINSTALL_UDEV_RULES=ON -DDETACH_KERNEL_DRIVER=ON
