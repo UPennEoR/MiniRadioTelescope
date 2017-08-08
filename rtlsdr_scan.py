@@ -11,9 +11,10 @@ import rtlsdr
 import numpy as np
 
 f_min = 64e6
-f_max = 110e6
+f_max = 500e6
 rate_best = 2.4e6
 df = rate_best
+#%%
 
 # Open device
 sdr = rtlsdr.RtlSdr()
@@ -49,7 +50,7 @@ for freq in freqs:
     flags[wh0-1:wh0+2] = 0
     #p[wh0] = np.median([p[wh0-1],p[wh0+1]])
     wh3 = np.abs(f - (fc_mhz+off)).argmin()
-    flags[wh3-1:wh3+2] = 0
+    flags[wh3-2:wh3+3] = 0
     #p[wh3] = np.median([p[wh3-1],p[wh3+1]])
     psd_all[indx] = p
     f_all[indx] = f
@@ -59,9 +60,15 @@ for freq in freqs:
 plt.xlabel('Frequency (MHz)')
 plt.ylabel('Relative power (dB)')
 
+
+#%%
 plt.figure(2)
 plt.clf()
 plt.plot(f_all,10.*np.log10(psd_all/flags_all))
+
+plt.xlabel('Frequency (MHz)')
+plt.ylabel('Relative power (dB)')
+plt.savefig('SDRFrequencyScan.png')
 
 #sdr.close()
 #plt.show()
