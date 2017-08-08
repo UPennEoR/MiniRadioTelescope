@@ -292,6 +292,19 @@ void SetStepMode(char mode)
   stepping_mode = mode;
 }
 
+void ReadRadADC(int ndata)
+{
+  Serial.println(BDTX);
+  for(x= 1; x<ndata; x++)  
+  {
+    // Read the ADC for the radiometer
+    val = analogRead(RXADC);
+    voltage = 5.0*val/1024.;
+    Serial.println(voltage,5);
+  }
+  Serial.println(EDTX);
+}
+
 void TakeSteps(int steps)
 {
   //Serial.println(STP);
