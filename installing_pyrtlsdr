@@ -1,0 +1,51 @@
+Some notes on installing pyrtlsdr.
+
+The python portion seems to install withtou error using
+
+sudo pip install pyrtlsdr
+
+However:
+
+>>> from rtlsdr import RtlSdr
+Traceback (most recent call last):
+  File "<stdin>", line 1, in <module>
+  File "rtlsdr/__init__.py", line 56, in <module>
+    from .librtlsdr import librtlsdr
+  File "rtlsdr/librtlsdr.py", line 52, in <module>
+    f = librtlsdr.rtlsdr_get_device_count
+  File "/usr/lib/python2.7/ctypes/__init__.py", line 378, in __getattr__
+    func = self.__getitem__(name)
+  File "/usr/lib/python2.7/ctypes/__init__.py", line 383, in __getitem__
+    func = self._FuncPtr((name_or_ordinal, self))
+AttributeError: python: undefined symbol: rtlsdr_get_device_count
+
+PROBABLY because librtlsdr is not installed.
+
+I note that cmake is not installed on the pi, so ...
+
+Download cmake-3.9.0.tar.gz from https://cmake.org/download/
+
+mv ~/Downloads/cmake-3.9.0.tar.gz .
+tar -xvzf cmake-3.9.0.tar.gz cmake-3.9.0/
+cd cmake-3.9.0/
+./bootstrap
+make
+sudo make install
+
+(these steps are VERY slow)
+
+
+
+libusb seems to be already installed, but the wrong version (?).  Get the "right" one:
+
+pi@raspberrypi:~/librtlsdr/build $ sudo apt-get install libusb-1.0-0
+Reading package lists... Done
+Building dependency tree       
+Reading state information... Done
+libusb-1.0-0 is already the newest version.
+libusb-1.0-0 set to manually installed.
+0 upgraded, 0 newly installed, 0 to remove and 206 not upgraded.
+
+Then follow Paul's instructions, BUT:
+
+cmake ../ -DINSTALL_UDEV_RULES=ON -DDETACH_KERNEL_DRIVER=ON

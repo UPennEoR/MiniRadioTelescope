@@ -60,7 +60,6 @@ for freq in freqs:
 plt.xlabel('Frequency (MHz)')
 plt.ylabel('Relative power (dB)')
 
-
 #%%
 plt.figure(2)
 plt.clf()
@@ -70,6 +69,6 @@ plt.xlabel('Frequency (MHz)')
 plt.ylabel('Relative power (dB)')
 plt.savefig('SDRFrequencyScan.png')
 
-#sdr.close()
-#plt.show()
+sdr.close()
+plt.show()
 
