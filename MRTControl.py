@@ -9,8 +9,8 @@ import MRTtools as mrt
 
 # Don't yet have a good way of auto-detecting which port is Arduino
 #port='/dev/cu.usbmodem1421'
-port='/dev/cu.usbmodem1411'
-#port = '/dev/ttyACM0'
+#port='/dev/cu.usbmodem1411'
+port = '/dev/ttyACM0'
 baud = 115200
 nIDBytes = 18
 
@@ -186,7 +186,7 @@ while(operate):
                 x = az
             plt.plot(x,pwr)
             N = 10
-            plt.plot(x,np.convolve(pwr, np.ones((N,))/N, mode='same'),'r')
+            #plt.plot(x,np.convolve(pwr, np.ones((N,))/N, mode='same'),'r')
             plt.show()
             print "Reading remaining buffer"
             dummy = read_ser_buffer_to_eot(ser)
