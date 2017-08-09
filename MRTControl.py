@@ -8,8 +8,8 @@ import time
 import MRTtools as mrt
 
 # Don't yet have a good way of auto-detecting which port is Arduino
-port='/dev/cu.usbmodem1421'
-#port='/dev/cu.usbmodem1411'
+#port='/dev/cu.usbmodem1421'
+port='/dev/cu.usbmodem1411'
 #port = '/dev/ttyACM0'
 baud = 115200
 nIDBytes = 18
