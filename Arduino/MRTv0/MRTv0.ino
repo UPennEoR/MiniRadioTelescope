@@ -44,6 +44,8 @@ http://www.schmalzhaus.com/EasyDriver/Examples/EasyDriverExamples.html
 #define BDTX "BDTX"
 #define EDTX "EDTX"
 
+#define BLCKAVG 16
+
 int STP; 
 int DIR; 
 int MS1; 
@@ -53,8 +55,8 @@ int EN;
 
 //Declare variables for functions
 char user_input;
-int x;
-int y;
+//int x;
+//int y;
 // int state;
 
 // Ugh.  Don't actually HAVE the current state of either axis
@@ -311,6 +313,10 @@ float ReadRadioADC(int ndata)
 
 void TakeSteps(int steps)
 {
+  long x;
+  float voltaccum[BLCKAVG];
+  int avg, cnt = 0;
+  
   //Serial.println(STP);
   for(x= 1; x<steps; x++)  
   {
@@ -340,12 +346,23 @@ void TakeSteps(int steps)
     // Read the ADC for the radiometer
     //val = analogRead(analogPin);
     //voltage = 5.0*val/1024.;
+    
     voltage = ReadRadioADC(10);
-    Serial.print(azCurrDeg,5);
-    Serial.print("  ");
-    Serial.print(elCurrDeg,5);
-    Serial.print("  ");
-    Serial.println(voltage,5);
+    voltaccum[cnt] = voltage;
+    cnt++;
+    if (x%BLCKAVG == 0){
+      voltage = 0.;
+      cnt = 0;
+      for(avg=1; avg<BLCKAVG; avg++){
+        voltage += voltaccum[avg];
+      }
+      voltage /= float(BLCKAVG);
+      Serial.print(azCurrDeg,5);
+      Serial.print("  ");
+      Serial.print(elCurrDeg,5);
+      Serial.print("  ");
+      Serial.println(voltage,5);
+    }
   }
 }
 
