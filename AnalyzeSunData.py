@@ -10,6 +10,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from glob import glob
 import ephem
+import os
 
 def readMRT(filename):
     dat = np.load(filename)
@@ -28,7 +29,7 @@ dat = {}
 # These are the useful ones
 #[s + mystring for s in mylist]
 filenames = ['45:26','46:08','47:56','48:18','54:16','55:12','56:08','56:44','58:49']
-filenames = ['Fri_Jun_30_15:'+s for s in filenames]
+filenames = ['ExampleData/Fri_Jun_30_15:'+s for s in filenames]
 filenames = [s+'_2017.npz' for s in filenames]
 
 #%%
@@ -39,8 +40,13 @@ for i,filename in enumerate(filenames):
     plt.figure(i+1)
     plt.clf()
     plt.plot(d[d['aa']],d['pwr']*300./17.)
-    plt.title(filename)
-    plt.xlabel(d['aa']+' scan (deg)')
+    tit = ((filename.split('/')[1]).split('.')[0]).split('_')
+    plt.title(tit[0]+' '+tit[2] +' ' + tit[1]+' '+tit[4]+' '+tit[3])
+    if d['aa'] == 'el':
+        Direction = 'Elevation'
+    else:
+        Direction = 'Azimuth'
+    plt.xlabel(Direction+' (deg)')
     plt.ylabel(r'Antenna Temperature (K)')#Power ($\mu$W)')
     
     
