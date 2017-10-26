@@ -1,15 +1,14 @@
-
 # verified 1 April 2017: working
 
 import serial
 import numpy as np
-import pylab as plt
+import matplotlib.pyplot as plt
 import time
 import MRTtools as mrt
 
 # Don't yet have a good way of auto-detecting which port is Arduino
-#port='/dev/cu.usbmodem1421'
-port='/dev/cu.usbmodem1411'
+port='/dev/cu.usbmodem1421'
+#port='/dev/cu.usbmodem1411'
 #port = '/dev/ttyACM0'
 baud = 115200
 nIDBytes = 18
@@ -153,74 +152,79 @@ print ser.inWaiting()
 read_ser_buffer_to_eot(ser)
 
 # Initialize the axis
+ser.write('L')
+ser.write('E')
+ser.write('M')
 ser.write('A')
 current_axis = 'az'
 dummy = read_ser_buffer_to_eot(ser)
+ser.write('E')
+ser.write('M')
+
+
+eloff = 0.
+azoff = 0.
 
 operate=True
 while(operate):
     #print_ser_buffer()
     var = raw_input("Enter command to transmit, Q to quit: ")
     if not var == 'Q':
-        print "Sending "+var
-        ser.write(var)
-        if (var == 'L'):
-            current_axis = 'el'
-        if (var == 'A'):
-            current_axis = 'az'
-        if (var == 'S'):
-            deg = raw_input("Enter number of degrees to turn: ")
-            print "Sending "+deg
-            ser.write(deg)
-            print "Reading data"
-            az,el,pwr = read_data(ser)
-            # Calibration
-            #el = el + 5.
-            #az = az + 241.
-            np.savez(file=time.ctime().replace(' ','_')+'.npz',az=az,el=el,pwr=pwr)
-            plt.figure(1)
-            plt.clf()
-            if (current_axis == 'el'):
-                x = el
-            if (current_axis == 'az'):
-                x = az
-            plt.plot(x,pwr)
-            plt.xlabel('Angle (degrees)')
-            plt.ylabel(r'Power ($\mu$W)')
-            N = 10
-            #plt.plot(x,np.convolve(pwr, np.ones((N,))/N, mode='same'),'r')
-            plt.show()
-            print "Reading remaining buffer"
-            dummy = read_ser_buffer_to_eot(ser)
-        elif (var == 'X'):
-            ndata = raw_input("Enter number of data points: ")
-            print "Sending "+ndata
-            ser.write(ndata)
-            print "Reading data"
-            volt,pwr = read_data_rx(ser)
-            print "Reading remaining buffer"
-            dummy = read_ser_buffer_to_eot(ser)
-            plt.figure(1)
-            plt.clf()
-            plt.plot(pwr)
-            print 'Mean voltage',volt.mean(),'St dev',volt.std()
-            print 'Mean power',pwr.mean(),'St dev',pwr.std()
-            #N = 10
-            #plt.plot(x,np.convolve(pwr, np.ones((N,))/N, mode='same'),'r')
-            plt.show()    
-
-#        if (var == 'n'):
-#            npts = raw_input("Enter number of data points: ")
-#            print "Sending "+npts
-#            ser.write(npts)
-#            print "Reading data"
-#            val = read_data_handshake(ser)
-#            print "Reading remaining buffer"
-#            dummy = read_ser_buffer_to_eot()
+        # User entries that don't require sending to Aruduino
+        if (var == 'O'):
+            eloff_in = raw_input("Enter new elevation offset: ")
+            eloff = float(eloff_in)
+            azoff_in = raw_input("Enter new azimuth offset: ")
+            azoff = float(azoff_in)
         else:
-            # Read back any reply
-            print "Default readback"
-            dummy = read_ser_buffer_to_eot(ser)
+            # Commands that get passed along
+            print "Sending "+var
+            ser.write(var)
+            if (var == 'L'):
+                current_axis = 'el'
+            if (var == 'A'):
+                current_axis = 'az'
+            if (var == 'S'):
+                deg = raw_input("Enter number of degrees to turn: ")
+                print "Sending "+deg
+                ser.write(deg)
+                print "Reading data"
+                az,el,pwr = read_data(ser)
+                az = az + azoff
+                el = el + eloff
+                np.savez(file=time.ctime().replace(' ','_')+'.npz',az=az,el=el,pwr=pwr)
+                plt.figure(1)
+                plt.clf()
+                if (current_axis == 'el'):
+                    x = el
+                if (current_axis == 'az'):
+                    x = az
+                plt.plot(x,pwr)
+                plt.xlabel('Angle (degrees)')
+                plt.ylabel(r'Power ($\mu$W)')
+                #N = 10
+                #plt.plot(x,np.convolve(pwr, np.ones((N,))/N, mode='same'),'r')
+                plt.show()
+                #print "Reading remaining buffer"
+                #dummy = read_ser_buffer_to_eot(ser)
+            elif (var == 'X'):
+                ndata = raw_input("Enter number of data points: ")
+                print "Sending "+ndata
+                ser.write(ndata)
+                print "Reading data"
+                volt,pwr = read_data_rx(ser)
+                print "Reading remaining buffer"
+                dummy = read_ser_buffer_to_eot(ser)
+                plt.figure(1)
+                plt.clf()
+                plt.plot(pwr)
+                print 'Mean voltage',volt.mean(),'St dev',volt.std()
+                print 'Mean power',pwr.mean(),'St dev',pwr.std()
+                plt.show()    
+            else:
+                # Read back any reply
+                print "Default readback"
+                dummy = read_ser_buffer_to_eot(ser)
     else:
         operate = False
 
