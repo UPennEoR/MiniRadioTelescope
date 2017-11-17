@@ -28,8 +28,8 @@ http://www.schmalzhaus.com/EasyDriver/Examples/EasyDriverExamples.html
 #define ELMS3 6  // 6  M3
 #define ELEN  7  // 7  EN
 
-#define AZSTP 9  // 2   ST
-#define AZDIR 8  // 3   DR
+#define AZSTP 9  // 2  ST
+#define AZDIR 8  // 3  DR
 #define AZMS1 11 // 4  M1
 #define AZMS2 12 // 5  M2
 #define AZMS3 13 // 6  M3
@@ -53,13 +53,9 @@ int MS2;
 int MS3; 
 int EN;  
 
-//Declare variables for functions
-char user_input;
-//int x;
-//int y;
-// int state;
+int analogPin = 0;
 
-// Ugh.  Don't actually HAVE the current state of either axis
+// Define the telescope state variables
 
 // Current position of elevation axis
 float elCurrDeg;
@@ -69,17 +65,18 @@ int elCurrMicroSteps;
 float azCurrDeg;
 int azCurrSteps;
 int azCurrMicroSteps;
-
-char stepping_mode; 
-float degrees_to_turn; 
-int rot_sense;
+// Mode
 char current_axis;
+char stepping_mode; 
+int rot_sense;
+int el_enable, az_enable;
 //char rot_dir // How does one get a string variable?
 
-int analogPin = 0;
+//Declare other variables
+char user_input;
+float degrees_to_turn; 
 int val;
 float voltage;
-
 float NormAdd, MicroAdd;
 
 void setup(){
@@ -96,15 +93,23 @@ void setup(){
   pinMode(ELMS2, OUTPUT);
   pinMode(ELMS3, OUTPUT);
   pinMode(ELEN, OUTPUT);
-  SetAxis('A');
+
+  // 
   resetBEDPins(); //Set step, direction, microstep and enable pins to default states
+  el_enable = 1;
+  az_enable = 1;
+  
   elCurrSteps = 0;
-  elCurrDeg = 0;
   elCurrMicroSteps = 0;
+  elCurrDeg = 0;
+  
   azCurrSteps = 0;
-  azCurrDeg = 0;
   azCurrMicroSteps = 0;
-  stepping_mode = 'N';
+  azCurrDeg = 0;
+
+  current_axis='A';
+  SetAxis('A');
+  stepping_mode = 'M';
   rot_sense = 1;
   
   // Finally, open serial connection
@@ -130,17 +135,17 @@ void loop() {
       {
         SetAxis(user_input);
       }
-      else if((user_input == 'N') || (user_input == 'M'))
-      {
-        SetStepMode(user_input);
-      }
+      //else if((user_input == 'N') || (user_input == 'M'))
+      //{
+      //  SetStepMode(user_input);
+      //}
       else if(user_input == 'S')
       {
         while (Serial.available()==0){ }
         degrees_to_turn = Serial.parseFloat();
         RotateDegrees(degrees_to_turn);
       }
-      else if(user_input == 'Z'){
+      /* else if(user_input == 'Z'){
         Serial.println("Zeroing position.");
         elCurrSteps = 0;
         elCurrDeg = 0;
@@ -148,13 +153,14 @@ void loop() {
         azCurrSteps = 0;
         azCurrDeg = 0;
         azCurrMicroSteps = 0;       
-      }
+      }*/
       else
       {
         Serial.println("Invalid option entered.");
         Serial.println(EOT);
       }
       //resetBEDPins();
+      ReportState();
       PrintState();
       PrintMenu();
   }
@@ -167,11 +173,38 @@ void PrintMenu()
   Serial.println("E for Enable; D for Disable");
   Serial.println("F for Forward; R for Reverse");
   Serial.println("A for azimuth; L for elevation");
-  Serial.println("N for normal steps; M for microsteps");
+  //Serial.println("N for normal steps; M for microsteps");
   Serial.println("S turn a number of decimal degrees");
-  Serial.println("Z to zero the angle counter");
+  //Serial.println("Z to zero the angle counter");
   Serial.println();
   Serial.println(EOT);
+}
+
+void ReportState()
+{
+  Serial.print(elCurrDeg);
+  Serial.print(" ");
+  //Serial.print(elCurrSteps);
+  //Serial.print(" ");
+  Serial.print(elCurrMicroSteps);
+  Serial.print(" ");
+  Serial.print(azCurrDeg);
+  Serial.print(" ");
+  //Serial.print(elCurrSteps);
+  //Serial.print(" ");
+  Serial.print(azCurrMicroSteps);
+  Serial.print(" ");
+  Serial.print(current_axis);
+  Serial.print(" ");
+  Serial.print(stepping_mode);
+  Serial.print(" ");
+  Serial.print(rot_sense);
+  Serial.print(" ");
+  Serial.print(el_enable);
+  Serial.print(" ");
+  Serial.print(az_enable);
+  Serial.println();
+
 }
 
 void PrintState()
@@ -214,7 +247,7 @@ void resetBEDPins()
   digitalWrite(MS1, LOW);
   digitalWrite(MS2, LOW);
   digitalWrite(MS3, LOW);
-  digitalWrite(EN, HIGH); // Motor is off at power-on
+  digitalWrite(EN, LOW); // Motor is on at power-on
 }
 
 void SetEnable(char enable)
