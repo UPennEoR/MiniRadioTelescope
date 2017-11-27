@@ -75,7 +75,7 @@ LSM9DS1 imu;
 ////////////////////////////
 #define PRINT_CALCULATED
 //#define PRINT_RAW
-#define PRINT_SPEED 100 // 250 ms between prints
+#define PRINT_SPEED 500 // 250 ms between prints
 
 // Earth's magnetic field varies by location. Add or subtract 
 // a declination to get a more accurate heading. Calculate 
@@ -114,15 +114,16 @@ void loop()
 {
   // printGyro();  // Print "G: gx, gy, gz"
   // Serial.print(", ");
-  //printAccel(); // Print "A: ax, ay, az
+  printAccel(); // Print "A: ax, ay, az
   //Serial.print(", ");
   printMag();   // Print "M: mx, my, mz"
+  //Serial.print(", ");
   
   // Print the heading and orientation for fun!
   // Call print attitude. The LSM9DS1's magnetometer x and y
   // axes are opposite to the accelerometer, so my and mx are
   // substituted for each other.
-  // printAttitude(imu.ax, imu.ay, imu.az, -imu.my, -imu.mx, imu.mz);
+  printAttitude(imu.ax, imu.ay, imu.az, -imu.my, -imu.mx, imu.mz);
   Serial.println();
   
   delay(PRINT_SPEED);
@@ -171,12 +172,12 @@ void printAccel()
   // If you want to print calculated values, you can use the
   // calcAccel helper function to convert a raw ADC value to
   // g's. Give the function the value that you want to convert.
-  //Serial.print(imu.calcAccel(imu.ax), 4);
-  //Serial.print(", ");
+  Serial.print(imu.calcAccel(imu.ax), 4);
+  Serial.print(", ");
   Serial.print(imu.calcAccel(imu.ay), 4);
-  //Serial.print(", ");
-  //Serial.print(imu.calcAccel(imu.az), 4);
-  //Serial.println(" g");
+  Serial.print(", ");
+  Serial.print(imu.calcAccel(imu.az), 4);
+  Serial.println(" g");
 #elif defined PRINT_RAW 
   Serial.print(imu.ax);
   Serial.print(", ");
@@ -201,12 +202,12 @@ void printMag()
   // If you want to print calculated values, you can use the
   // calcMag helper function to convert a raw ADC value to
   // Gauss. Give the function the value that you want to convert.
-  //Serial.print(imu.calcMag(imu.mx), 4);
-  //Serial.print(", ");
+  Serial.print(imu.calcMag(imu.mx), 4);
+  Serial.print(", ");
   Serial.print(imu.calcMag(imu.my), 4);
-  //Serial.print(", ");
-  //Serial.print(imu.calcMag(imu.mz), 4);
-  //Serial.println(" gauss");
+  Serial.print(", ");
+  Serial.print(imu.calcMag(imu.mz), 4);
+  Serial.println(" gauss");
 #elif defined PRINT_RAW
   Serial.print(imu.mx);
   Serial.print(", ");
