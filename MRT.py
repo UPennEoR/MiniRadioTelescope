@@ -47,6 +47,89 @@ def FlushSerialBuffers(ser):
     ser.flushOutput()
     return
 
+""" This will be the fundamental list of returned values that has to be kept
+in sync with the Arduino.  Can't build a dictionary, because need to preserve 
+the order of items read """
+state_vars = ['lastCMDvalid',
+              'elDeg',
+              'elSteps',
+              'azDeg',
+              'azSteps',
+              'axis',
+              'mode',
+              'sense',
+              'elEnable',
+              'azEnable',
+              'voltage',
+              'ax',
+              'ay',
+              'az',
+              'mx',
+              'my',
+              'mz',
+              'pitch',
+              'roll',
+              'heading']
+
+state_dtypes=['string',
+              'float64',
+              'int64',
+              'float64',
+              'int64',
+              'string',
+              'string',
+              'int64',
+              'int',
+              'int',
+              'float64',
+              'float64',
+              'float64',
+              'float64',
+              'float64',
+              'float64',
+              'float64',
+              'float64',
+              'float64',
+              'float64']
+              
+def read_ser_buffer_to_eot(ser):
+    output = []
+    buf = ser.readline()
+    while(buf != EOT):
+        output.append(buf)
+        print buf[:-1]
+        buf = ser.readline()
+    return output
+
+def readState(ser,init=None):
+    # Initialize the dictionary, unless a previous state is passed in
+    if init != None:
+        data = {}
+        for state_var in state_vars:
+            data[state_var] = []
+    else:
+        data = init
+    buf = read_ser_buffer_to_eot(ser)
+    vars = buf[0].split()
+    assert len(buf[0].split()) == len(state_vars)
+    for i,var in enumerate(vars):
+         data[state_vars[i]].append(var)
+    return data
+
+def numpyState(state):
+    ndata = {}
+    for i in np.arange(len(state_vars)):
+        ndata[state_vars[i]] = np.array(state[state_vars[i]],
+                                        dtype=state_dtypes[i])
+    ndata['pwr'] = mrt.zx47_60(ndata['voltage'])
+    return ndata
+
+            plt.subplot(312)
+            plt.plot(ndata['ax'],label='ax')
+            plt.plot(ndata['ay'],label='ay')
+            plt.plot(ndata['az'],label='az')
+            plt.legend()
+
 def read_data(ser):
     # Read what comes back until you see the "begin data transmission"
     az = []
@@ -73,47 +156,22 @@ def read_data(ser):
     pwr = mrt.zx47_60(pwr)
     return (az,el,pwr)
 
-""" This will be the fundamental list of returned values that has to be kept
-in sync with the Arduino.  Can't build a dictionary, because need to preserve 
-the order of items read """
-state_vars = ['lastCMDvalid','elDeg','elSteps','azDeg','azSteps','axis','mode','sense','elEnable','azEnable','voltage','ax','ay','az','mx','my','mz','pitch','roll','heading']
-
-def read_ser_buffer_to_eot(ser):
-    output = []
-    buf = ser.readline()
-    while(buf != EOT):
-        output.append(buf)
-        print buf[:-1]
-        buf = ser.readline()
-    return output
-
-# This may not be the best method, because it's so obnoxious to convert to numpy
-def readState(ser):
-    # Initialize the dictionary
-    data = {}
-    for state_var in state_vars:
-        data[state_var] = []
-    buf = read_ser_buffer_to_eot(ser)
-    vars = buf[0].split()
-    assert len(buf[0].split()) == len(state_vars)
-    for i,var in enumerate(vars):
-         data[state_vars[i]].append(var)
-    return data
 
 def readStream(ser):
     """ Generalize read_data to read an arbitrary list """
-    # Initialize the dictionary
+    data = {}
     for state_var in state_vars:
         data[state_var] = []
     # Begin reading serial port
     buf = ser.readline()
-    #print buf
+    print buf
     while (buf != BDTX):
         buf = ser.readline()
-    #    print buf
+        print buf
     while(buf != EDTX):
-        buf = ser.readline()
+         data = readStream(ser,init=data)
         if (buf != EDTX):
+            data
             vars = buf.split()
             for i,var in enumerate(vars):
                 # This deals with streaming data from scans
@@ -179,19 +237,32 @@ while(operate):
             print "Sending "+deg
             ser.write(deg)
             print "Reading data"
-            az,el,pwr = read_data(ser)
-            az = az + azoff
-            el = el + eloff
-            np.savez(file=time.ctime().replace(' ','_')+'.npz',az=az,el=el,pwr=pwr)
+            data = readStream(ser)
+            # Convert
+            ndata = numpyState(data)
+            # Save
+            np.savez(file=time.ctime().replace(' ','_')+'.npz',az=ndata=ndata)
+            # Plot
             plt.figure(1)
             plt.clf()
-            if (current_axis == 'el'):
-                x = el
-            if (current_axis == 'az'):
-                x = az
-            plt.plot(x,pwr)
+            plt.subplot(311)
+            if (data['axis'][0] == 'L'):
+                x = data['elDeg']
+            if (current_axis == 'A'):
+                x = data['azDeg']
+            plt.plot(x,ndata['pwr'])
             plt.xlabel('Angle (degrees)')
             plt.ylabel(r'Power ($\mu$W)')
+            plt.subplot(312)
+            plt.plot(ndata['ax'],label='ax')
+            plt.plot(ndata['ay'],label='ay')
+            plt.plot(ndata['az'],label='az')
+            plt.legend()
+            plt.subplot(313)
+            plt.plot(ndata['mx'],label='mx')
+            plt.plot(ndata['my'],label='my')
+            plt.plot(ndata['mz'],label='mz')
+            plt.legend()
             #N = 10
             #plt.plot(x,np.convolve(pwr, np.ones((N,))/N, mode='same'),'r')
             plt.show()
@@ -208,6 +279,7 @@ while(operate):
                 dummy = readState(ser)
                 for key in data.keys():
                     data[key].append(dummy[key][0])
+                ndata = numpyState(data)
         else:
             # Commands that get passed along
             print "Sending "+var
