@@ -7,19 +7,64 @@ import time
 import MRTtools as mrt
 
 # Don't yet have a good way of auto-detecting which port is Arduino
-port='/dev/cu.usbmodem1421'
-#port='/dev/cu.usbmodem1411'
+#port='/dev/cu.usbmodem1421'
+port='/dev/cu.usbmodem1411'
 #port = '/dev/ttyACM0'
 baud = 115200
 nIDBytes = 18
 
 EOT = 'ZZZ\r\n'
-BTX = 'AAA\r\n'
+#BTX = 'AAA\r\n'
 BDTX = 'BDTX\r\n'
 EDTX = 'EDTX\r\n'
 
-# Best practices for opening the serial port with reset
+def StdCmd(ser,cmd):
+    ser.write(cmd)
+    return readState(ser)
 
+def Scan(ser,deg):
+    ser.write('S')
+    ser.write(deg)
+    data = readStream(ser)
+    current_state = readState(ser)
+    return data
+
+def RasterMap():
+    """ Super hard coded to get something going.  Start where you are, and
+    make a 20 x 20 degree map """
+    plt.figure(1)
+    plt.clf()
+    map = np.zeros([20,20])
+    az = np.array([])
+    el = np.array([])
+    pwr = np.array([])
+    for i in np.arange(10):
+        cs = StdCmd(ser,'A')
+        cs = StdCmd(ser,'R')
+        d = Scan(ser,'20')
+        plt.subplot(10,1,i+1)
+        plt.plot(d['azDeg'],d['pwr'])
+        az = np.append(az,d['azDeg'])
+        el = np.append(el,d['elDeg'])
+        pwr = np.append(pwr,d['pwr'])
+        cs = StdCmd(ser,'L')
+        cs = StdCmd(ser,'R')
+        d = Scan(ser,'1')
+        cs = StdCmd(ser,'A')
+        cs = StdCmd(ser,'F')
+        d = Scan(ser,'20')
+        plt.subplot(10,1,i+1)
+        plt.plot(d['azDeg'],d['pwr'])
+        az = np.append(az,d['azDeg'])
+        el = np.append(el,d['elDeg'])
+        pwr = np.append(pwr,d['pwr'])
+        cs = StdCmd(ser,'L')
+        cs = StdCmd(ser,'R')
+        d = Scan(ser,'1')
+    plt.show()
+    return (az,el,pwr)
+        
+# Best practices for opening the serial port with reset
 def WaitForInputBytes(timeout=10,nbytesExpected=1):
     """ Wait for bytes to appear on the input serial buffer up to the timeout
     specified, in seconds """
@@ -97,23 +142,42 @@ def read_ser_buffer_to_eot(ser):
     buf = ser.readline()
     while(buf != EOT):
         output.append(buf)
-        print buf[:-1]
+        #print buf[:-1]
         buf = ser.readline()
     return output
 
-def readState(ser,init=None):
-    # Initialize the dictionary, unless a previous state is passed in
-    if init != None:
-        data = {}
-        for state_var in state_vars:
-            data[state_var] = []
-    else:
-        data = init
-    buf = read_ser_buffer_to_eot(ser)
+def initState():
+    """ Initialize a dictionary to hold the state """
+    state = {}
+    for state_var in state_vars:
+        state[state_var] = []
+    return state
+        
+def parseState(buf,data):
     vars = buf[0].split()
     assert len(buf[0].split()) == len(state_vars)
     for i,var in enumerate(vars):
          data[state_vars[i]].append(var)
+    return data
+
+def readState(ser,init=None):
+    # Initialize the dictionary, unless a previous state is passed in
+    if init == None:
+        data = initState()
+#        data = {}
+#        for state_var in state_vars:
+#            data[state_var] = []
+    else:
+        data = init
+    buf = read_ser_buffer_to_eot(ser)
+    #print buf
+    #print len(state_vars)
+    #print len(buf[0].split())
+    #vars = buf[0].split()
+    #assert len(buf[0].split()) == len(state_vars)
+    #for i,var in enumerate(vars):
+    #     data[state_vars[i]].append(var)
+    data = parseState(buf,data)
     return data
 
 def numpyState(state):
@@ -123,12 +187,6 @@ def numpyState(state):
                                         dtype=state_dtypes[i])
     ndata['pwr'] = mrt.zx47_60(ndata['voltage'])
     return ndata
-
-            plt.subplot(312)
-            plt.plot(ndata['ax'],label='ax')
-            plt.plot(ndata['ay'],label='ay')
-            plt.plot(ndata['az'],label='az')
-            plt.legend()
 
 def read_data(ser):
     # Read what comes back until you see the "begin data transmission"
@@ -156,28 +214,58 @@ def read_data(ser):
     pwr = mrt.zx47_60(pwr)
     return (az,el,pwr)
 
-
 def readStream(ser):
     """ Generalize read_data to read an arbitrary list """
-    data = {}
-    for state_var in state_vars:
-        data[state_var] = []
+    data = initState()
+#    data = {}
+#    for state_var in state_vars:
+#        data[state_var] = []
     # Begin reading serial port
-    buf = ser.readline()
-    print buf
-    while (buf != BDTX):
-        buf = ser.readline()
-        print buf
-    while(buf != EDTX):
-         data = readStream(ser,init=data)
-        if (buf != EDTX):
-            data
-            vars = buf.split()
-            for i,var in enumerate(vars):
-                # This deals with streaming data from scans
-                data[state_vars[i]].append(var)
-    return data
+    buf = read_ser_buffer_to_eot(ser) #ser.readline()
+    print '1 BUFFER', buf[0]
+    # Read anything you see until you see BDTX
+    while (buf[0] != BDTX):
+        buf = read_ser_buffer_to_eot(ser) #ser.readline()
+        print '2 BUFFER:', buf[0]
+    # Then read states
+    while(buf[0] != EDTX):
+        buf = read_ser_buffer_to_eot(ser)
+        if (buf[0] != EDTX):
+            data = parseState(buf,data)
+    ndata = numpyState(data)
+    return ndata
 
+def PlotData(ndata):
+    plt.figure(1,figsize=(10,7))
+    plt.clf()
+    plt.subplot(311)
+    if (ndata['axis'][0] == 'L'):
+        x = ndata['elDeg']
+    if (ndata['axis'][0] == 'A'):
+        x = ndata['azDeg']
+    plt.plot(x,ndata['pwr'])
+    plt.xlabel('Angle (degrees)')
+    plt.ylabel(r'Power ($\mu$W)')
+    plt.subplot(312)
+    plt.plot(ndata['ax'],label='ax')
+    plt.plot(ndata['ay'],label='ay')
+    plt.plot(ndata['az'],label='az')
+    plt.legend()
+    plt.subplot(313)
+    plt.plot(ndata['mx'],label='mx')
+    plt.plot(ndata['my'],label='my')
+    plt.plot(ndata['mz'],label='mz')
+    plt.legend()
+    #N = 10
+    #plt.plot(x,np.convolve(pwr, np.ones((N,))/N, mode='same'),'r')
+    plt.show()
+    return
+
+def PrintState(state):
+    """ Make a pretty version of the current state """
+    print 'AZ:',state['azDeg'][0],'EL:',state['elDeg'][0]
+    print 'Current axis:',state['axis'][0]
+    return
 
 # ----------------------------------------------------------------------------
 # Begin
@@ -230,6 +318,8 @@ operate=True
 while(operate):
     var = raw_input("Enter command to transmit, Q to quit: ")
     if not var == 'Q':
+        if (var == 'M'): # Make a map!
+            az,el,pwr = RasterMap()
         if (var == 'S'):
             print "Sending "+var
             ser.write(var)
@@ -237,65 +327,37 @@ while(operate):
             print "Sending "+deg
             ser.write(deg)
             print "Reading data"
-            data = readStream(ser)
+            ndata = readStream(ser)
+            current_state = readState(ser)
+            PrintState(current_state)
             # Convert
-            ndata = numpyState(data)
+            #ndata = numpyState(data)
             # Save
-            np.savez(file=time.ctime().replace(' ','_')+'.npz',az=ndata=ndata)
+            #np.savez(file=time.ctime().replace(' ','_')+'.npz',az=ndata=ndata)
             # Plot
-            plt.figure(1)
-            plt.clf()
-            plt.subplot(311)
-            if (data['axis'][0] == 'L'):
-                x = data['elDeg']
-            if (current_axis == 'A'):
-                x = data['azDeg']
-            plt.plot(x,ndata['pwr'])
-            plt.xlabel('Angle (degrees)')
-            plt.ylabel(r'Power ($\mu$W)')
-            plt.subplot(312)
-            plt.plot(ndata['ax'],label='ax')
-            plt.plot(ndata['ay'],label='ay')
-            plt.plot(ndata['az'],label='az')
-            plt.legend()
-            plt.subplot(313)
-            plt.plot(ndata['mx'],label='mx')
-            plt.plot(ndata['my'],label='my')
-            plt.plot(ndata['mz'],label='mz')
-            plt.legend()
-            #N = 10
-            #plt.plot(x,np.convolve(pwr, np.ones((N,))/N, mode='same'),'r')
-            plt.show()
-            #print "Reading remaining buffer"
-            #dummy = read_ser_buffer_to_eot(ser)
+            PlotData(ndata)
         elif (var == 'X'):
-            ndata = raw_input("Enter number of data points: ")
+            Ndatapts = raw_input("Enter number of data points: ")
             ser.write(var)
+            # Initialize the data variable
             data = readState(ser)
-            for i in np.arange(int(ndata)-1):
+            for i in np.arange(int(Ndatapts)-1):
                 # Trick it by sending invalid commands and reading them back
                 ser.write(var)
                 #read_ser_buffer_to_eot(ser)
                 dummy = readState(ser)
                 for key in data.keys():
                     data[key].append(dummy[key][0])
-                ndata = numpyState(data)
+            ndata = numpyState(data)
+            PlotData(ndata)
         else:
             # Commands that get passed along
             print "Sending "+var
             ser.write(var)
             # Read back any reply
             #read_ser_buffer_to_eot(ser)
-            data = readState(ser)
-            print data
- #           data = {}
- #           for state_var in state_vars:
- #               data[state_var] = []
- #           buf = read_ser_buffer_to_eot(ser)
- #           vars = buf[0].split()
- #           print len(buf[0].split()) == len(state_vars)
- #           for i,var in enumerate(vars):
- #               data[state_vars[i]].append(var)
+            current_state = readState(ser)
+            PrintState(current_state)
     else:
         operate = False
 

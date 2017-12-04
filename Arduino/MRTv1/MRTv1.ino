@@ -151,7 +151,7 @@ int azCurrSteps;
 int azCurrMicroSteps;
 // Mode
 char current_axis;
-char stepping_mode; 
+char step_mode='M'; // Hard coded for now 
 int rot_sense;
 int el_enable, az_enable;
 char last_command_valid = 'Y';
@@ -183,9 +183,11 @@ void setup(){
   SetAxis('L');
   resetBEDPins(); 
   SetEnable('E');
+  SetStepMode(step_mode);
   SetAxis('A');
   resetBEDPins();
   SetEnable('E'); 
+  SetStepMode(step_mode);
 
   // Initialize stepping variables
   elCurrSteps = 0;
@@ -196,8 +198,7 @@ void setup(){
   azCurrMicroSteps = 0;
   azCurrDeg = 0;
 
-  // Vestigial
-  stepping_mode = 'M';
+  
   
   // Convention: 1 = CCW, Inc; 0 = CW, Dec
   rot_sense = 1;
@@ -288,7 +289,7 @@ void ReportState()
   Serial.print(" ");
   Serial.print(current_axis);
   Serial.print(" ");
-  Serial.print(stepping_mode);
+  Serial.print(step_mode);
   Serial.print(" ");
   Serial.print(rot_sense);
   Serial.print(" ");
@@ -438,7 +439,7 @@ void SetStepMode(char mode)
     digitalWrite(MS3, HIGH); 
     Serial.println("Micro (1/16) step set.");   
   }
-  stepping_mode = mode;
+  step_mode = mode;
 }
 
 float ReadRadioADC(int ndata)
@@ -469,7 +470,7 @@ void TakeSteps(int steps)
     digitalWrite(STP,LOW); //Pull step pin low so it can be triggered again
     delay(1);
 
-    if (stepping_mode == 'M'){
+    if (step_mode == 'M'){
       NormAdd = 1./16.;
       MicroAdd = 1;
     } 
@@ -480,11 +481,11 @@ void TakeSteps(int steps)
     if (current_axis == 'L'){
       elCurrSteps += rot_sense * NormAdd;
       elCurrMicroSteps += rot_sense * MicroAdd;
-      elCurrDeg += rot_sense * Steps2Degrees(1,stepping_mode);
+      elCurrDeg += rot_sense * Steps2Degrees(1,step_mode);
     } else{
       azCurrSteps += rot_sense * NormAdd;
       azCurrMicroSteps += rot_sense * MicroAdd;
-      azCurrDeg += rot_sense * Steps2Degrees(1,stepping_mode);
+      azCurrDeg += rot_sense * Steps2Degrees(1,step_mode);
     }
 
     // Read the ADC for the radiometer
@@ -542,17 +543,21 @@ void RotateDegrees(float deg)
   //Serial.println(BTX);
   /* Which thing is commanded and how actual degrees are calculated depends on 
   the mode */
-  if (stepping_mode == 'N')
+  if (step_mode == 'N')
   {
     Serial.println(BDTX);
+    Serial.println(EOT);
     TakeSteps(nSteps);
     Serial.println(EDTX);
+    Serial.println(EOT);
     //actual_degrees = Steps2Degrees(nSteps,'N');
   } else
   {
     Serial.println(BDTX);
+    Serial.println(EOT);
     TakeSteps(nMicroSteps);
     Serial.println(EDTX);
+    Serial.println(EOT);
     //actual_degrees = Steps2Degrees(nMicroSteps,'M');
   }
 }
