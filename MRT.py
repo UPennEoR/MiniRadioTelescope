@@ -5,6 +5,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import time
 import MRTtools as mrt
+from scipy.interpolate import griddata
 
 # Don't yet have a good way of auto-detecting which port is Arduino
 #port='/dev/cu.usbmodem1421'
@@ -34,7 +35,6 @@ def RasterMap():
     make a 20 x 20 degree map """
     plt.figure(1)
     plt.clf()
-    map = np.zeros([20,20])
     az = np.array([])
     el = np.array([])
     pwr = np.array([])
@@ -61,6 +61,19 @@ def RasterMap():
         cs = StdCmd(ser,'L')
         cs = StdCmd(ser,'R')
         d = Scan(ser,'1')
+    plt.show()
+    plt.figure(2)
+    plt.clf()
+    eli = np.linspace(az.min(),az.max(),20)
+    azi = np.linspace(el.min(),el.max(),20)
+    # grid the data.
+    zi = griddata((az, el), pwr, (eli[None,:], azi[:,None]), method='nearest')
+    # contour the gridded data
+    plt.imshow(zi,aspect='auto',cmap=plt.cm.jet)
+    plt.colorbar()
+    CS = plt.contour(eli,azi,zi,5,linewidths=1,colors='w')
+    #CS = plt.contourf(eli,azi,zi,10,cmap=plt.cm.jet)
+    plt.axis('equal')
     plt.show()
     return (az,el,pwr)
         
