@@ -320,7 +320,7 @@ while(operate):
     if not var == 'Q':
         if (var == 'M'): # Make a map!
             az,el,pwr = RasterMap()
-        if (var == 'S'):
+        elif (var == 'S'):
             print "Sending "+var
             ser.write(var)
             deg = raw_input("Enter number of degrees to turn: ")
