@@ -39,6 +39,7 @@ def RasterMap():
     el = np.array([])
     pwr = np.array([])
     for i in np.arange(10):
+        print i,'of 10'
         cs = StdCmd(ser,'A')
         cs = StdCmd(ser,'R')
         d = Scan(ser,'20')
@@ -69,13 +70,15 @@ def RasterMap():
     # grid the data.
     zi = griddata((az, el), pwr, (eli[None,:], azi[:,None]), method='nearest')
     # contour the gridded data
-    plt.imshow(zi,aspect='auto',cmap=plt.cm.jet)
+    plt.imshow(np.flipud(zi),aspect='auto',cmap=plt.cm.jet,
+               extent=[eli.min(),eli.max(),azi.min(),azi.max()])
     plt.colorbar()
-    CS = plt.contour(eli,azi,zi,5,linewidths=1,colors='w')
+    #CS = plt.contour(zi,5,linewidths=1,colors='w')
+    #CS = plt.contour(eli,azi,zi,5,linewidths=1,colors='w')
     #CS = plt.contourf(eli,azi,zi,10,cmap=plt.cm.jet)
     plt.axis('equal')
     plt.show()
-    return (az,el,pwr)
+    return (az,el,pwr,zi,azi,eli)
         
 # Best practices for opening the serial port with reset
 def WaitForInputBytes(timeout=10,nbytesExpected=1):
@@ -235,11 +238,11 @@ def readStream(ser):
 #        data[state_var] = []
     # Begin reading serial port
     buf = read_ser_buffer_to_eot(ser) #ser.readline()
-    print '1 BUFFER', buf[0]
+    #print '1 BUFFER', buf[0]
     # Read anything you see until you see BDTX
     while (buf[0] != BDTX):
         buf = read_ser_buffer_to_eot(ser) #ser.readline()
-        print '2 BUFFER:', buf[0]
+        #print '2 BUFFER:', buf[0]
     # Then read states
     while(buf[0] != EDTX):
         buf = read_ser_buffer_to_eot(ser)
@@ -332,7 +335,7 @@ while(operate):
     var = raw_input("Enter command to transmit, Q to quit: ")
     if not var == 'Q':
         if (var == 'M'): # Make a map!
-            az,el,pwr = RasterMap()
+            az,el,pwr,mp,azi,eli = RasterMap()
         elif (var == 'S'):
             print "Sending "+var
             ser.write(var)
