@@ -28,7 +28,7 @@ def Scan(ser,deg):
     ser.write(deg)
     data = readStream(ser)
     current_state = readState(ser)
-    return data
+    return (data, current_state)
 
 def RasterMap():
     """ Super hard coded to get something going.  Start where you are, and
@@ -42,7 +42,7 @@ def RasterMap():
         print i,'of 10'
         cs = StdCmd(ser,'A')
         cs = StdCmd(ser,'R')
-        d = Scan(ser,'20')
+        d,cs = Scan(ser,'20')
         plt.subplot(10,1,i+1)
         plt.plot(d['azDeg'],d['pwr'])
         az = np.append(az,d['azDeg'])
@@ -50,10 +50,10 @@ def RasterMap():
         pwr = np.append(pwr,d['pwr'])
         cs = StdCmd(ser,'L')
         cs = StdCmd(ser,'R')
-        d = Scan(ser,'1')
+        d,cs= Scan(ser,'1')
         cs = StdCmd(ser,'A')
         cs = StdCmd(ser,'F')
-        d = Scan(ser,'20')
+        d,cs = Scan(ser,'20')
         plt.subplot(10,1,i+1)
         plt.plot(d['azDeg'],d['pwr'])
         az = np.append(az,d['azDeg'])
@@ -61,7 +61,7 @@ def RasterMap():
         pwr = np.append(pwr,d['pwr'])
         cs = StdCmd(ser,'L')
         cs = StdCmd(ser,'R')
-        d = Scan(ser,'1')
+        d,cs = Scan(ser,'1')
     plt.show()
     plt.figure(2)
     plt.clf()
@@ -74,7 +74,7 @@ def RasterMap():
                extent=[eli.min(),eli.max(),azi.min(),azi.max()])
     plt.colorbar()
     #CS = plt.contour(zi,5,linewidths=1,colors='w')
-    #CS = plt.contour(eli,azi,zi,5,linewidths=1,colors='w')
+    plt.contour(eli,azi,zi,5,linewidths=1,colors='w')
     #CS = plt.contourf(eli,azi,zi,10,cmap=plt.cm.jet)
     plt.axis('equal')
     plt.show()
@@ -324,6 +324,11 @@ ser.write('M')
 eloff = 0.
 azoff = 0.
 
+# Initialize the current state
+ser.write('X')
+current_state = readState(ser)
+PrintState(current_state)
+
 """ Basic mode of operation should be that the Python side handles the user 
 interface and menu, and sends groups of atomic commands.  The Arduino always
 reports its state in response to any command, including whether the last 
@@ -336,6 +341,37 @@ while(operate):
     if not var == 'Q':
         if (var == 'M'): # Make a map!
             az,el,pwr,mp,azi,eli = RasterMap()
+            # Update the current state
+            current_state = StdCmd(ser,'X')
+            PrintState(current_state)
+        elif (var == 'G'):
+            azG = raw_input("Az: ")
+            elG = raw_input("El: ")
+            azG = float(azG)
+            elG = float(elG)
+            if ((azG >= -180. and azG <= 180.) and (elG >= 0. and elG <= 120.)):
+                d_az = azG - float(current_state['azDeg'][0])
+                d_el = elG - float(current_state['elDeg'][0])
+                print 'd_az',d_az
+                print 'd_el',d_el
+                current_state = StdCmd(ser,'A')
+                current_state = StdCmd(ser,'E')
+                if d_az < 0:
+                    current_state = StdCmd(ser,'R')
+                else:
+                    current_state = StdCmd(ser,'F')
+                print 'Starting from'
+                PrintState(current_state)
+                d,current_state = Scan(ser,str(np.abs(d_az)))
+                current_state = StdCmd(ser,'L')
+                current_state = StdCmd(ser,'E')
+                if d_el < 0:
+                    current_state = StdCmd(ser,'R')
+                else:
+                    current_state = StdCmd(ser,'F')
+                d,current_state = Scan(ser,str(np.abs(d_el)))
+                print 'Ending at'
+                PrintState(current_state)
         elif (var == 'S'):
             print "Sending "+var
             ser.write(var)
