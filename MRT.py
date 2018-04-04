@@ -21,7 +21,7 @@ EDTX = 'EDTX\r\n'
 
 # For the nominal mounting in the observatory
 eloff = 35.5
-azoff = -27.
+azoff = -170.
 
 def StdCmd(ser,cmd):
     ser.write(cmd)
@@ -188,6 +188,11 @@ def numpyState(state):
         ndata[state_vars[i]] = np.array(state[state_vars[i]],
                                         dtype=state_dtypes[i])
     ndata['pwr'] = mrt.zx47_60(ndata['voltage'])
+    # Both readState and readStream run through here.
+    # Apply offsets
+    ndata['azDeg'] = np.mod(-ndata['azDeg'] - azoff,360)
+    ndata['elDeg'] -= eloff 
+
     return ndata
 
 def parseState(buf,data):
@@ -195,12 +200,6 @@ def parseState(buf,data):
     assert len(buf[0].split()) == len(state_vars)
     for i,var in enumerate(vars):
          data[state_vars[i]].append(var)
-    # When parsing the state, numpify the data and apply offsets, since
-    # both readState and readStream run through here.
-    # Numpify and apply offsets
-    data = numpyState(data)
-    data['azDeg'] -= azoff
-    data['elDeg'] -= eloff 
     return data
 
 def readState(ser,init=None):
@@ -211,37 +210,10 @@ def readState(ser,init=None):
         data = init
     buf = read_ser_buffer_to_eot(ser)
     data = parseState(buf,data)
-    return data
+    ndata = numpyState(data)
+    return ndata
 
-""" No longer necessary ?
-def read_data(ser):
-    # Read what comes back until you see the "begin data transmission"
-    az = []
-    el = []
-    pwr = []
-    buf = ser.readline()
-    print buf
-    while (buf != BDTX):
-        buf = ser.readline()
-        print buf
-    while(buf != EDTX):
-        buf = ser.readline()
-        if (buf != EDTX):
-            a,e,p = buf.split()
-            az.append(a)
-            el.append(e)
-            pwr.append(p)
-        #output.append(buf)
-        print buf
-    #output.pop()
-    az = np.array(az,dtype='float64')-azoff
-    el = np.array(el,dtype='float64')-eloff
-    pwr = np.array(pwr,dtype='float64')
-    pwr = mrt.zx47_60(pwr)
-    return (az,el,pwr)
-"""
-
-# GODDAMMIT!  There are two places where I read data
+# GODDAMMIT!  There are two places where I read data: readState and readStream
 def readStream(ser):
     """ Generalize read_data to read an arbitrary list """
     data = initState()
@@ -356,7 +328,14 @@ while(operate):
             elG = raw_input("El: ")
             azG = float(azG)
             elG = float(elG)
-            if ((azG >= -180. and azG <= 180.) and (elG >= 0. and elG <= 120.)):
+            """ I just chose the wrong convention for azimuth rotation.  
+            I picked that F is CCW and increasing numbers, and the astronomical
+            convention would be that CW from above is increasing (N through E).
+            So we have to do a sign flip on the AZ and a counterintuitive 
+            direction for the motion.  Idiot.  """
+            # Should find a way to encode these limits elsewhere
+            if ((azG >=0. and azG <= 360.) and (elG >= -eloff and elG <= 120.)):
+                # Deltas are defined as desired minus current position
                 d_az = azG - float(current_state['azDeg'][0])
                 d_el = elG - float(current_state['elDeg'][0])
                 print 'd_az',d_az
@@ -364,9 +343,11 @@ while(operate):
                 current_state = StdCmd(ser,'A')
                 current_state = StdCmd(ser,'E')
                 if d_az < 0:
-                    current_state = StdCmd(ser,'R')
-                else:
+                    # If moving to a less positive azimuth, go CCW
                     current_state = StdCmd(ser,'F')
+                else:
+                    # If moving to a more positive azimuth, go CW
+                    current_state = StdCmd(ser,'R')
                 print 'Starting from'
                 PrintState(current_state)
                 d,current_state = Scan(ser,str(np.abs(d_az)))
@@ -379,6 +360,8 @@ while(operate):
                 d,current_state = Scan(ser,str(np.abs(d_el)))
                 print 'Ending at'
                 PrintState(current_state)
+            else:
+                print 'Requested az/el out of bounds'
         elif (var == 'S'):
             print "Sending "+var
             ser.write(var)
