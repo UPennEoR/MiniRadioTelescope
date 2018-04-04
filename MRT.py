@@ -8,8 +8,8 @@ import MRTtools as mrt
 from scipy.interpolate import griddata
 
 # Don't yet have a good way of auto-detecting which port is Arduino
-#port='/dev/cu.usbmodem1421'
-port='/dev/cu.usbmodem1411'
+port='/dev/cu.usbmodem1421'
+#port='/dev/cu.usbmodem1411'
 #port = '/dev/ttyACM0'
 baud = 115200
 nIDBytes = 18
@@ -18,6 +18,10 @@ EOT = 'ZZZ\r\n'
 #BTX = 'AAA\r\n'
 BDTX = 'BDTX\r\n'
 EDTX = 'EDTX\r\n'
+
+# For the nominal mounting in the observatory
+eloff = 35.5
+azoff = -27.
 
 def StdCmd(ser,cmd):
     ser.write(cmd)
@@ -35,6 +39,7 @@ def RasterMap():
     make a 20 x 20 degree map """
     plt.figure(1)
     plt.clf()
+    
     az = np.array([])
     el = np.array([])
     pwr = np.array([])
@@ -62,6 +67,7 @@ def RasterMap():
         cs = StdCmd(ser,'L')
         cs = StdCmd(ser,'R')
         d,cs = Scan(ser,'1')
+    
     plt.show()
     plt.figure(2)
     plt.clf()
@@ -70,6 +76,10 @@ def RasterMap():
     # grid the data.
     zi = griddata((az, el), pwr, (eli[None,:], azi[:,None]), method='nearest')
     # contour the gridded data
+    np.savez(file='map_'+time.ctime().replace(' ','_')+'.npz',
+             az=az,el=el,pwr=pwr,zi=zi,azi=azi,eli=eli)
+
+    
     plt.imshow(np.flipud(zi),aspect='auto',cmap=plt.cm.jet,
                extent=[eli.min(),eli.max(),azi.min(),azi.max()])
     plt.colorbar()
@@ -78,6 +88,9 @@ def RasterMap():
     #CS = plt.contourf(eli,azi,zi,10,cmap=plt.cm.jet)
     plt.axis('equal')
     plt.show()
+
+
+    
     return (az,el,pwr,zi,azi,eli)
         
 # Best practices for opening the serial port with reset
@@ -176,6 +189,16 @@ def parseState(buf,data):
          data[state_vars[i]].append(var)
     return data
 
+def numpyState(state):
+    ndata = {}
+    for i in np.arange(len(state_vars)):
+        ndata[state_vars[i]] = np.array(state[state_vars[i]],
+                                        dtype=state_dtypes[i])
+    ndata['pwr'] = mrt.zx47_60(ndata['voltage'])
+    ndata['azDeg'] -= azoff
+    ndata['elDeg'] -= eloff 
+    return ndata
+
 def readState(ser,init=None):
     # Initialize the dictionary, unless a previous state is passed in
     if init == None:
@@ -194,15 +217,9 @@ def readState(ser,init=None):
     #for i,var in enumerate(vars):
     #     data[state_vars[i]].append(var)
     data = parseState(buf,data)
+    # Adding here; fingers crossed
+    data = numpyState(data)
     return data
-
-def numpyState(state):
-    ndata = {}
-    for i in np.arange(len(state_vars)):
-        ndata[state_vars[i]] = np.array(state[state_vars[i]],
-                                        dtype=state_dtypes[i])
-    ndata['pwr'] = mrt.zx47_60(ndata['voltage'])
-    return ndata
 
 def read_data(ser):
     # Read what comes back until you see the "begin data transmission"
@@ -224,8 +241,8 @@ def read_data(ser):
         #output.append(buf)
         print buf
     #output.pop()
-    az = np.array(az,dtype='float64')
-    el = np.array(el,dtype='float64')
+    az = np.array(az,dtype='float64')-azoff
+    el = np.array(el,dtype='float64')-eloff
     pwr = np.array(pwr,dtype='float64')
     pwr = mrt.zx47_60(pwr)
     return (az,el,pwr)
@@ -321,8 +338,6 @@ ser.write('E')
 ser.write('M')
 """
 
-eloff = 0.
-azoff = 0.
 
 # Initialize the current state
 ser.write('X')
@@ -383,9 +398,10 @@ while(operate):
             current_state = readState(ser)
             PrintState(current_state)
             # Convert
-            #ndata = numpyState(data)
+            #ndata = numpyState(ndata)
             # Save
-            #np.savez(file=time.ctime().replace(' ','_')+'.npz',az=ndata=ndata)
+            np.savez(file=time.ctime().replace(' ','_')+'.npz',
+                     ndata=numpyState(ndata))
             # Plot
             PlotData(ndata)
         elif (var == 'X'):
