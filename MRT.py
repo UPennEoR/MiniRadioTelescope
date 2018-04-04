@@ -182,45 +182,38 @@ def initState():
         state[state_var] = []
     return state
         
-def parseState(buf,data):
-    vars = buf[0].split()
-    assert len(buf[0].split()) == len(state_vars)
-    for i,var in enumerate(vars):
-         data[state_vars[i]].append(var)
-    return data
-
 def numpyState(state):
     ndata = {}
     for i in np.arange(len(state_vars)):
         ndata[state_vars[i]] = np.array(state[state_vars[i]],
                                         dtype=state_dtypes[i])
     ndata['pwr'] = mrt.zx47_60(ndata['voltage'])
-    ndata['azDeg'] -= azoff
-    ndata['elDeg'] -= eloff 
     return ndata
+
+def parseState(buf,data):
+    vars = buf[0].split()
+    assert len(buf[0].split()) == len(state_vars)
+    for i,var in enumerate(vars):
+         data[state_vars[i]].append(var)
+    # When parsing the state, numpify the data and apply offsets, since
+    # both readState and readStream run through here.
+    # Numpify and apply offsets
+    data = numpyState(data)
+    data['azDeg'] -= azoff
+    data['elDeg'] -= eloff 
+    return data
 
 def readState(ser,init=None):
     # Initialize the dictionary, unless a previous state is passed in
     if init == None:
         data = initState()
-#        data = {}
-#        for state_var in state_vars:
-#            data[state_var] = []
     else:
         data = init
     buf = read_ser_buffer_to_eot(ser)
-    #print buf
-    #print len(state_vars)
-    #print len(buf[0].split())
-    #vars = buf[0].split()
-    #assert len(buf[0].split()) == len(state_vars)
-    #for i,var in enumerate(vars):
-    #     data[state_vars[i]].append(var)
     data = parseState(buf,data)
-    # Adding here; fingers crossed
-    data = numpyState(data)
     return data
 
+""" No longer necessary ?
 def read_data(ser):
     # Read what comes back until you see the "begin data transmission"
     az = []
@@ -246,13 +239,12 @@ def read_data(ser):
     pwr = np.array(pwr,dtype='float64')
     pwr = mrt.zx47_60(pwr)
     return (az,el,pwr)
+"""
 
+# GODDAMMIT!  There are two places where I read data
 def readStream(ser):
     """ Generalize read_data to read an arbitrary list """
     data = initState()
-#    data = {}
-#    for state_var in state_vars:
-#        data[state_var] = []
     # Begin reading serial port
     buf = read_ser_buffer_to_eot(ser) #ser.readline()
     #print '1 BUFFER', buf[0]
@@ -401,7 +393,7 @@ while(operate):
             #ndata = numpyState(ndata)
             # Save
             np.savez(file=time.ctime().replace(' ','_')+'.npz',
-                     ndata=numpyState(ndata))
+                     ndata=ndata)
             # Plot
             PlotData(ndata)
         elif (var == 'X'):
