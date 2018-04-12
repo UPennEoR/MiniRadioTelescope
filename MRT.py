@@ -21,7 +21,7 @@ EDTX = 'EDTX\r\n'
 
 # For the nominal mounting in the observatory
 eloff = 35.5
-azoff = -170.
+azoff = -191.
 
 def StdCmd(ser,cmd):
     ser.write(cmd)
