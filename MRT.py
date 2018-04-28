@@ -20,79 +20,12 @@ BDTX = 'BDTX\r\n'
 EDTX = 'EDTX\r\n'
 
 # For the nominal mounting in the observatory
-eloff = -35.5+1.
-azoff = -191.+82.
+#eloff = -35.5
+#azoff = -191.
+# For a general setup facing south
+eloff = 35.5
+azoff = -180.
 
-def StdCmd(ser,cmd):
-    ser.write(cmd)
-    return readState(ser)
-
-def Scan(ser,deg):
-    ser.write('S')
-    ser.write(deg)
-    data = readStream(ser)
-    current_state = readState(ser)
-    return (data, current_state)
-
-def RasterMap():
-    """ Super hard coded to get something going.  Start where you are, and
-    make a 20 x 20 degree map """
-    plt.figure(1)
-    plt.clf()
-    
-    az = np.array([])
-    el = np.array([])
-    pwr = np.array([])
-    for i in np.arange(10):
-        print i,'of 10'
-        cs = StdCmd(ser,'A')
-        cs = StdCmd(ser,'R')
-        d,cs = Scan(ser,'20')
-        plt.subplot(10,1,i+1)
-        plt.plot(d['azDeg'],d['pwr'])
-        az = np.append(az,d['azDeg'])
-        el = np.append(el,d['elDeg'])
-        pwr = np.append(pwr,d['pwr'])
-        cs = StdCmd(ser,'L')
-        cs = StdCmd(ser,'R')
-        d,cs= Scan(ser,'1')
-        cs = StdCmd(ser,'A')
-        cs = StdCmd(ser,'F')
-        d,cs = Scan(ser,'20')
-        plt.subplot(10,1,i+1)
-        plt.plot(d['azDeg'],d['pwr'])
-        az = np.append(az,d['azDeg'])
-        el = np.append(el,d['elDeg'])
-        pwr = np.append(pwr,d['pwr'])
-        cs = StdCmd(ser,'L')
-        cs = StdCmd(ser,'R')
-        d,cs = Scan(ser,'1')
-    
-    plt.show()
-    plt.figure(2)
-    plt.clf()
-    eli = np.linspace(az.min(),az.max(),20)
-    azi = np.linspace(el.min(),el.max(),20)
-    # grid the data.
-    zi = griddata((az, el), pwr, (eli[None,:], azi[:,None]), method='nearest')
-    # contour the gridded data
-    np.savez(file='map_'+time.ctime().replace(' ','_')+'.npz',
-             az=az,el=el,pwr=pwr,zi=zi,azi=azi,eli=eli)
-
-    
-    plt.imshow(np.flipud(zi),aspect='auto',cmap=plt.cm.jet,
-               extent=[eli.min(),eli.max(),azi.min(),azi.max()])
-    plt.colorbar()
-    #CS = plt.contour(zi,5,linewidths=1,colors='w')
-    plt.contour(eli,azi,zi,5,linewidths=1,colors='w')
-    #CS = plt.contourf(eli,azi,zi,10,cmap=plt.cm.jet)
-    plt.axis('equal')
-    plt.show()
-
-
-    
-    return (az,el,pwr,zi,azi,eli)
-        
 # Best practices for opening the serial port with reset
 def WaitForInputBytes(timeout=10,nbytesExpected=1):
     """ Wait for bytes to appear on the input serial buffer up to the timeout
@@ -165,7 +98,29 @@ state_dtypes=['string',
               'float64',
               'float64',
               'float64']
-              
+
+def readState(ser,init=None):
+    # Initialize the dictionary, unless a previous state is passed in
+    if init == None:
+        data = initState()
+    else:
+        data = init
+    buf = read_ser_buffer_to_eot(ser)
+    data = parseState(buf,data)
+    ndata = numpyState(data)
+    return ndata
+
+def StdCmd(ser,cmd):
+    ser.write(cmd)
+    return readState(ser)
+
+def Scan(ser,deg):
+    ser.write('S')
+    ser.write(deg)
+    data = readStream(ser)
+    current_state = readState(ser)
+    return (data, current_state)
+
 def read_ser_buffer_to_eot(ser):
     output = []
     buf = ser.readline()
@@ -201,17 +156,6 @@ def parseState(buf,data):
     for i,var in enumerate(vars):
          data[state_vars[i]].append(var)
     return data
-
-def readState(ser,init=None):
-    # Initialize the dictionary, unless a previous state is passed in
-    if init == None:
-        data = initState()
-    else:
-        data = init
-    buf = read_ser_buffer_to_eot(ser)
-    data = parseState(buf,data)
-    ndata = numpyState(data)
-    return ndata
 
 # GODDAMMIT!  There are two places where I read data: readState and readStream
 def readStream(ser):
@@ -263,6 +207,114 @@ def PrintState(state):
     print 'AZ:',state['azDeg'][0],'EL:',state['elDeg'][0]
     print 'Current axis:',state['axis'][0]
     return
+
+def GoTo(current_state,azG=None,elG=None):
+    if azG == None:
+        azG = raw_input("Az: ")
+        azG = float(azG)
+    if elG == None:
+        elG = raw_input("El: ")
+        elG = float(elG)
+    
+    """ I just chose the wrong convention for azimuth rotation.  
+    I picked that F is CCW and increasing numbers, and the astronomical
+    convention would be that CW from above is increasing (N through E).
+    So we have to do a sign flip on the AZ and a counterintuitive 
+    direction for the motion.  Idiot.  """
+    # Should find a way to encode these limits elsewhere
+    if ((azG >=0. and azG <= 360.) and (elG >= -eloff and elG <= 120.)):
+        # Deltas are defined as desired minus current position
+        d_az = azG - float(current_state['azDeg'][0])
+        d_el = elG - float(current_state['elDeg'][0])
+        print 'd_az',d_az
+        print 'd_el',d_el
+        current_state = StdCmd(ser,'A')
+        current_state = StdCmd(ser,'E')
+        if d_az < 0:
+            # If moving to a less positive azimuth, go CCW
+            current_state = StdCmd(ser,'F')
+        else:
+            # If moving to a more positive azimuth, go CW
+            current_state = StdCmd(ser,'R')
+        print 'Starting from'
+        PrintState(current_state)
+        d,current_state = Scan(ser,str(np.abs(d_az)))
+        current_state = StdCmd(ser,'L')
+        current_state = StdCmd(ser,'E')
+        if d_el < 0:
+            current_state = StdCmd(ser,'R')
+        else:
+            current_state = StdCmd(ser,'F')
+        d,current_state = Scan(ser,str(np.abs(d_el)))
+        print 'Ending at'
+        PrintState(current_state)
+    else:
+        print 'Requested az/el out of bounds'
+
+def RasterMap(current_state):
+    """ Super hard coded to get something going.  Start where you are, and
+    make a 20 x 20 degree map """
+
+    azG = raw_input("Az: ")
+    azG = float(azG)
+    elG = raw_input("El: ")
+    elG = float(elG)
+    GoTo(current_state,azG=azG-10.,elG=elG+10.)
+    
+    #plt.figure(1)
+    #plt.clf()
+    
+    az = np.array([])
+    el = np.array([])
+    pwr = np.array([])
+    for i in np.arange(10):
+        print i,'of 10'
+        cs = StdCmd(ser,'A')
+        cs = StdCmd(ser,'R')
+        d,cs = Scan(ser,'20')
+        #plt.subplot(10,1,i+1)
+        #plt.plot(d['azDeg'],d['pwr'])
+        az = np.append(az,d['azDeg'])
+        el = np.append(el,d['elDeg'])
+        pwr = np.append(pwr,d['pwr'])
+        cs = StdCmd(ser,'L')
+        cs = StdCmd(ser,'R')
+        d,cs= Scan(ser,'1')
+        cs = StdCmd(ser,'A')
+        cs = StdCmd(ser,'F')
+        d,cs = Scan(ser,'20')
+        #plt.subplot(10,1,i+1)
+        #plt.plot(d['azDeg'],d['pwr'])
+        az = np.append(az,d['azDeg'])
+        el = np.append(el,d['elDeg'])
+        pwr = np.append(pwr,d['pwr'])
+        cs = StdCmd(ser,'L')
+        cs = StdCmd(ser,'R')
+        d,cs = Scan(ser,'1')
+    
+    #plt.show()
+    plt.figure(2,figsize=(8,8))
+    plt.clf()
+    eli = np.linspace(az.min(),az.max(),20)
+    azi = np.linspace(el.min(),el.max(),20)
+    # grid the data.
+    zi = griddata((az, el), pwr, (eli[None,:], azi[:,None]), method='nearest')
+    # contour the gridded data
+    np.savez(file='map_'+time.ctime().replace(' ','_')+'.npz',
+             az=az,el=el,pwr=pwr,zi=zi,azi=azi,eli=eli)
+
+    
+    plt.imshow(np.flipud(zi),aspect='auto',cmap=plt.cm.jet,
+               extent=[eli.min(),eli.max(),azi.min(),azi.max()])
+    plt.colorbar()
+    #CS = plt.contour(zi,5,linewidths=1,colors='w')
+    plt.contour(eli,azi,zi,5,linewidths=1,colors='w')
+    #CS = plt.contourf(eli,azi,zi,10,cmap=plt.cm.jet)
+    plt.axis('equal')
+    plt.savefig()
+    plt.show()
+    
+    return (az,el,pwr,zi,azi,eli)
 
 # ----------------------------------------------------------------------------
 # Begin
@@ -319,20 +371,26 @@ while(operate):
     var = raw_input("Enter command to transmit, Q to quit: ")
     if not var == 'Q':
         if (var == 'M'): # Make a map!
-            az,el,pwr,mp,azi,eli = RasterMap()
+            cs = StdCmd(ser,'X')
+            az,el,pwr,mp,azi,eli = RasterMap(cs)
             # Update the current state
             current_state = StdCmd(ser,'X')
             PrintState(current_state)
         elif (var == 'G'):
+            cs = StdCmd(ser,'X')
+            current_state = cs
+            GoTo(cs)
+            current_state =  StdCmd(ser,'X')
+            """
             azG = raw_input("Az: ")
             elG = raw_input("El: ")
             azG = float(azG)
             elG = float(elG)
-            """ I just chose the wrong convention for azimuth rotation.  
-            I picked that F is CCW and increasing numbers, and the astronomical
-            convention would be that CW from above is increasing (N through E).
-            So we have to do a sign flip on the AZ and a counterintuitive 
-            direction for the motion.  Idiot.  """
+            #I just chose the wrong convention for azimuth rotation.  
+            #I picked that F is CCW and increasing numbers, and the astronomical
+            #convention would be that CW from above is increasing (N through E).
+            #So we have to do a sign flip on the AZ and a counterintuitive 
+            #direction for the motion.  Idiot.
             # Should find a way to encode these limits elsewhere
             if ((azG >=0. and azG <= 360.) and (elG >= -eloff and elG <= 120.)):
                 # Deltas are defined as desired minus current position
@@ -362,6 +420,7 @@ while(operate):
                 PrintState(current_state)
             else:
                 print 'Requested az/el out of bounds'
+            """
         elif (var == 'S'):
             print "Sending "+var
             ser.write(var)
