@@ -311,7 +311,9 @@ def RasterMap(current_state):
     plt.contour(eli,azi,zi,5,linewidths=1,colors='w')
     #CS = plt.contourf(eli,azi,zi,10,cmap=plt.cm.jet)
     plt.axis('equal')
-    plt.savefig()
+    plt.xlabel('Azimuth (degrees)')
+    plt.ylabel('Elevation (degrees)')
+    plt.savefig(time.ctime().replace(' ','_')+'.png')
     plt.show()
     
     return (az,el,pwr,zi,azi,eli)
