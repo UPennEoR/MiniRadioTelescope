@@ -20,11 +20,11 @@ BDTX = 'BDTX\r\n'
 EDTX = 'EDTX\r\n'
 
 # For the nominal mounting in the observatory
-eloff = 35.5
-azoff = -191.
+#eloff = -35.5
+#azoff = -191.
 # For a general setup facing south
-#eloff = 35.5
-#azoff = -180.
+eloff = 34.5
+azoff = -177.
 
 # Best practices for opening the serial port with reset
 def WaitForInputBytes(timeout=10,nbytesExpected=1):
@@ -295,22 +295,25 @@ def RasterMap(current_state):
     #plt.show()
     plt.figure(2,figsize=(8,8))
     plt.clf()
-    eli = np.linspace(az.min(),az.max(),20)
+    projfac = np.cos(np.radians(el.mean()))
+    eli = np.linspace(az.min(),az.max(),20)*projfac
     azi = np.linspace(el.min(),el.max(),20)
     # grid the data.
-    zi = griddata((az, el), pwr, (eli[None,:], azi[:,None]), method='nearest')
+    zi = griddata((az*projfac, el), pwr, (eli[None,:], azi[:,None]), method='nearest')
     # contour the gridded data
     np.savez(file='map_'+time.ctime().replace(' ','_')+'.npz',
              az=az,el=el,pwr=pwr,zi=zi,azi=azi,eli=eli)
 
     
     plt.imshow(np.flipud(zi),aspect='auto',cmap=plt.cm.jet,
-               extent=[eli.min(),eli.max(),azi.min(),azi.max()])
+               extent=[eli.min()/projfac,eli.max()/projfac,azi.min(),azi.max()])
     plt.colorbar()
     #CS = plt.contour(zi,5,linewidths=1,colors='w')
     plt.contour(eli,azi,zi,5,linewidths=1,colors='w')
     #CS = plt.contourf(eli,azi,zi,10,cmap=plt.cm.jet)
     plt.axis('equal')
+    #plt.ylim([azi.min(),azi.max()])
+    #plt.xlim([eli.min(),eli.max()])
     plt.xlabel('Azimuth (degrees)')
     plt.ylabel('Elevation (degrees)')
     plt.savefig(time.ctime().replace(' ','_')+'.png')

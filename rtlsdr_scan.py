@@ -9,9 +9,10 @@ Created on Wed Jul 26 21:55:36 2017
 import matplotlib.pyplot as plt
 import rtlsdr
 import numpy as np
+import time
 
 f_min = 64e6
-f_max = 500e6
+f_max = 1700e6
 rate_best = 2.4e6
 df = rate_best
 #%%
@@ -67,7 +68,9 @@ plt.plot(f_all,10.*np.log10(psd_all/flags_all))
 
 plt.xlabel('Frequency (MHz)')
 plt.ylabel('Relative power (dB)')
-plt.savefig('SDRFrequencyScan.png')
+tm = time.ctime().replace(' ','_')
+plt.savefig('SDRFrequencyScan_'+tm+'.png')
+np.savez('SDRFrequencyScan_'+tm+'.npz',f_all=f_all,psd_all=psd_all,flags_all=flags_all,f_min=f_min,f_max=f_max,rate_best=rate_best,df=df)
 
 sdr.close()
 plt.show()
