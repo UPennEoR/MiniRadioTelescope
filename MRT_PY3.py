@@ -28,6 +28,8 @@ ELEVATION = b'L'
 AZIMUTH = b'A'
 FORWARD = b'F'
 REVERSE = b'R'
+SCAN = b'S'
+ENABLE = b'E'
 
 
 # For the nominal mounting in the observatory
@@ -126,8 +128,8 @@ def StdCmd(ser,cmd):
     return readState(ser)
 
 def Scan(ser,deg):
-    ser.write('S')
-    ser.write(deg)
+    ser.write(SCAN)
+    ser.write(str.encode(deg))
     data = readStream(ser)
     current_state = readState(ser)
     return (data, current_state)
@@ -163,6 +165,7 @@ def numpyState(state):
     return ndata
 
 def parseState(buf,data):
+    print(buf)
     vars = buf[0].split()
     assert len(buf[0].split()) == len(state_vars)
     for i,var in enumerate(vars):
@@ -240,23 +243,23 @@ def GoTo(current_state,azG=None,elG=None):
         d_el = elG - float(current_state['elDeg'][0])
         print ('d_az',d_az)
         print ('d_el',d_el)
-        current_state = StdCmd(ser,'A')
-        current_state = StdCmd(ser,'E')
+        current_state = StdCmd(ser,AZIMUTH)
+        current_state = StdCmd(ser,ENABLE)
         if d_az < 0:
             # If moving to a less positive azimuth, go CCW
-            current_state = StdCmd(ser,'F')
+            current_state = StdCmd(ser,FORWARD)
         else:
             # If moving to a more positive azimuth, go CW
-            current_state = StdCmd(ser,'R')
+            current_state = StdCmd(ser,REVERSE)
         print ('Starting from')
         PrintState(current_state)
         d,current_state = Scan(ser,str(np.abs(d_az)))
-        current_state = StdCmd(ser,'L')
-        current_state = StdCmd(ser,'E')
+        current_state = StdCmd(ser,ELEVATION)
+        current_state = StdCmd(ser,ENABLE)
         if d_el < 0:
-            current_state = StdCmd(ser,'R')
+            current_state = StdCmd(ser,REVERSE)
         else:
-            current_state = StdCmd(ser,'F')
+            current_state = StdCmd(ser,FORWARD)
         d,current_state = Scan(ser,str(np.abs(d_el)))
         print ('Ending at')
         PrintState(current_state)
@@ -363,7 +366,7 @@ print (ser.inWaiting())
 #%%
 
 output = read_ser_buffer_to_eot(ser)
-print(output)
+#print(output)
 
 #%%
 
@@ -411,10 +414,10 @@ while(operate):
             current_state =  StdCmd(ser,REPORT_STATE)
         elif (var == 'S'):
             print ("Sending "+var)
-            ser.write(var)
+            ser.write(SCAN)
             deg = input("Enter number of degrees to turn: ")
             print ("Sending "+deg)
-            ser.write(deg)
+            ser.write(str.encode(deg))
             print ("Reading data")
             ndata = readStream(ser)
             current_state = readState(ser)
@@ -428,7 +431,7 @@ while(operate):
             PlotData(ndata)
         elif (var == 'X'):
             Ndatapts = input("Enter number of data points: ")
-            ser.write(var)
+            ser.write(REPORT_STATE)
             # Initialize the data variable
             data = readState(ser)
             for i in np.arange(int(Ndatapts)-1):
@@ -443,7 +446,7 @@ while(operate):
         else:
             # Commands that get passed along
             print ("Sending "+var)
-            ser.write(var)
+            ser.write(str.encode(var))
             # Read back any reply
             #read_ser_buffer_to_eot(ser)
             current_state = readState(ser)
