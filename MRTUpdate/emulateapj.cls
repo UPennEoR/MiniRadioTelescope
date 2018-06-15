@@ -1,0 +1,1 @@
+/Users/jaguirre/Documents/Latex/emulateapj.cls

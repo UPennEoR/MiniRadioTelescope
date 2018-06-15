@@ -1,3 +1,5 @@
+
 *.npz
 *.*~
 *.pyc
+DataNoGit/
