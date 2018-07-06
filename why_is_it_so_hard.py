@@ -7,12 +7,12 @@ Created on Mon Jul  2 15:19:46 2018
 """
 
 #import serial
-#import numpy as np
+import numpy as np
 #import matplotlib.pyplot as plt
-#import time
+import time
 #import MRTtools as mrt
 import mrtstate
-import mrtf_test as mrtf
+import MRT_FUNC_PY3 as mrtf
 #from scipy.interpolate import griddata
 
 #%%
@@ -70,17 +70,17 @@ while(operate):
             az,el,pwr,mp,azi,eli = mrtf.RasterMap(cs)
             # Update the current state
             current_state = mrtf.StdCmd(ser,mrtf.REPORT_STATE)
-            mrtf.PrintState(current_state)
+            mrtf.PrintState()
         elif (var == 'MS'): # Make a map!
             cs = mrtf.StdCmd(ser,mrtf.REPORT_STATE)
             az,el,pwr,mp,azi,eli = mrtf.ScanSouthSky(cs)
             # Update the current state
             current_state = mrtf.StdCmd(ser,mrtf.REPORT_STATE)
-            mrtf.PrintState(current_state)
+            mrtf.PrintState()
         elif (var == 'G'):
             cs = mrtf.StdCmd(ser,mrtf.REPORT_STATE)
-            current_state = cs
-            mrtf.GoTo(cs)
+            current_state = mrtstate.state
+            mrtf.GoTo()
             current_state =  mrtf.StdCmd(ser,mrtf.REPORT_STATE)
         elif (var == 'GA'):
             cs = mrtf.StdCmd(ser,mrtf.REPORT_STATE)
@@ -101,7 +101,7 @@ while(operate):
             print ("Reading data")
             ndata = mrtf.readStream(ser)
             current_state = mrtf.readState(ser)
-            mrtf.PrintState(current_state)
+            mrtf.PrintState()
             # Convert
             #ndata = numpyState(ndata)
             # Save
@@ -117,7 +117,7 @@ while(operate):
             for i in np.arange(int(Ndatapts)-1):
                 ser.write(mrtf.REPORT_STATE)
                 current_state = mrtf.readState(ser)
-                mrtf.PrintState(current_state)
+                mrtf.PrintState()
                 # Trick it by sending invalid commands and reading them back
                 #ser.write(REPORT_STATE)
                 #read_ser_buffer_to_eot(ser)
@@ -133,7 +133,7 @@ while(operate):
             # Read back any reply
             #read_ser_buffer_to_eot(ser)
             current_state = mrtf.readState(ser)
-            mrtf.PrintState(current_state)
+            mrtf.PrintState()
     else:
         operate = False
 
