@@ -47,49 +47,6 @@ REVERSE = b'R'
 SCAN = b'S'
 ENABLE = b'E'
 
-state_vars = ['lastCMDvalid',
-              'elDeg',
-              'elSteps',
-              'azDeg',
-              'azSteps',
-              'axis',
-              'mode',
-              'sense',
-              'elEnable',
-              'azEnable',
-              'voltage',
-              'ax',
-              'ay',
-              'az',
-              'mx',
-              'my',
-              'mz',
-              'pitch',
-              'roll',
-              'heading']
-
-state_dtypes=['<U16', #'string',
-              'float64',
-              'int64',
-              'float64',
-              'int64',
-              '<U16', #'string',,
-              '<U16', #'string',
-              'int64',
-              'int',
-              'int',
-              'float64',
-              'float64',
-              'float64',
-              'float64',
-              'float64',
-              'float64',
-              'float64',
-              'float64',
-              'float64',
-              'float64']
-
-
 # For the nominal mounting in the observatory
 eloff = 35.5
 azoff = -191.
@@ -129,15 +86,15 @@ def FlushSerialBuffers(ser):
 def initState():
     """ Initialize a dictionary to hold the state """
     state = {}
-    for state_var in state_vars:
+    for state_var in mrtstate.state_vars:
         state[state_var] = []
     return state
         
 def numpyState(state):
     ndata = {}
-    for i in np.arange(len(state_vars)):
-        ndata[state_vars[i]] = np.array(state[state_vars[i]],
-                                        dtype=state_dtypes[i])
+    for i in np.arange(len(mrtstate.state_vars)):
+        ndata[mrtstate.state_vars[i]] = np.array(state[mrtstate.state_vars[i]],
+                                        dtype=mrtstate.state_dtypes[i])
     ndata['pwr'] = mrt.zx47_60(ndata['voltage'])
     # Both readState and readStream run through here.
     # Apply offsets
@@ -151,13 +108,13 @@ def parseState(buffer,state):
     and parse it into the state dictionary defined by the state_vars """
     vars = buffer[0].split()
     #assert len(buf[0].split()) == len(state_vars)
-    if len(vars) != len(state_vars):
+    if len(vars) != len(mrtstate.state_vars):
         print('Cannot parse the returned state')
         FlushSerialBuffers(ser)
-        state = None
+        state = initState()
     else:
         for i,var in enumerate(vars):
-            state[state_vars[i]].append(var)
+            state[mrtstate.state_vars[i]].append(var)
     return state
 
 def readState(ser,init=None):
@@ -168,13 +125,38 @@ def readState(ser,init=None):
         data = init
     buf = read_ser_buffer_to_eot(ser)
     data = parseState(buf,data)
-    if data is not None:
+    ndata = numpyState(data)
+    mrtstate.state = ndata
+    return ndata
+
+'''
+def readState(ser,init=0):
+    # Initialize the dictionary, unless a previous state is passed in
+    if init == 0:
+        data = initState()
+    else:
+        data = init
+    buf = read_ser_buffer_to_eot(ser)
+    data = parseState(buf,data)
+    if data is not 0:
         mrtstate.state = numpyState(data)
     #else:
     #    ndata = mrtstate.state #None
     
     return #ndata
 
+def readState(ser):
+    # Initialize the dictionary, unless a previous state is passed in
+    data = initState()
+    buf = read_ser_buffer_to_eot(ser)
+    data = parseState(buf,data)
+    if data is not None:
+        mrtstate.state = numpyState(data)
+    #else:
+    #    ndata = mrtstate.state #None
+    
+    return #ndata
+'''
 # GODDAMMIT!  There are two places where I read data: readState and readStream
 def readStream(ser):
     """ Generalize read_data to read an arbitrary list """
@@ -212,3 +194,4 @@ def read_ser_buffer_to_eot(ser):
         #print(buf[:-1])
         buf = ser.readline()
     return output
+
