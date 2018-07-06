@@ -46,49 +46,6 @@ REVERSE = b'R'
 SCAN = b'S'
 ENABLE = b'E'
 
-state_vars = ['lastCMDvalid',
-              'elDeg',
-              'elSteps',
-              'azDeg',
-              'azSteps',
-              'axis',
-              'mode',
-              'sense',
-              'elEnable',
-              'azEnable',
-              'voltage',
-              'ax',
-              'ay',
-              'az',
-              'mx',
-              'my',
-              'mz',
-              'pitch',
-              'roll',
-              'heading']
-
-state_dtypes=['<U16', #'string',
-              'float64',
-              'int64',
-              'float64',
-              'int64',
-              '<U16', #'string',,
-              '<U16', #'string',
-              'int64',
-              'int',
-              'int',
-              'float64',
-              'float64',
-              'float64',
-              'float64',
-              'float64',
-              'float64',
-              'float64',
-              'float64',
-              'float64',
-              'float64']
-
-
 # For the nominal mounting in the observatory
 eloff = 35.5
 azoff = -191.
@@ -123,18 +80,20 @@ def FlushSerialBuffers(ser):
     ser.flushOutput()
     return
 
+# --------------------------------------------
+
 def initState():
     """ Initialize a dictionary to hold the state """
     state = {}
-    for state_var in state_vars:
+    for state_var in mrtstate.state_vars:
         state[state_var] = []
     return state
         
 def numpyState(state):
     ndata = {}
-    for i in np.arange(len(state_vars)):
-        ndata[state_vars[i]] = np.array(state[state_vars[i]],
-                                        dtype=state_dtypes[i])
+    for i in np.arange(len(mrtstate.state_vars)):
+        ndata[mrtstate.state_vars[i]] = np.array(state[mrtstate.state_vars[i]],
+                                        dtype=mrtstate.state_dtypes[i])
     ndata['pwr'] = mrt.zx47_60(ndata['voltage'])
     # Both readState and readStream run through here.
     # Apply offsets
@@ -148,13 +107,13 @@ def parseState(buffer,state):
     and parse it into the state dictionary defined by the state_vars """
     vars = buffer[0].split()
     #assert len(buf[0].split()) == len(state_vars)
-    if len(vars) != len(state_vars):
+    if len(vars) != len(mrtstate.state_vars):
         print('Cannot parse the returned state')
         FlushSerialBuffers(ser)
-        state = None
+        state = initState()
     else:
         for i,var in enumerate(vars):
-            state[state_vars[i]].append(var)
+            state[mrtstate.state_vars[i]].append(var)
     return state
 
 def readState(ser,init=None):
@@ -165,12 +124,38 @@ def readState(ser,init=None):
         data = init
     buf = read_ser_buffer_to_eot(ser)
     data = parseState(buf,data)
-    if data is not None:
-        ndata = numpyState(data)
-    else:
-        ndata = None
+    ndata = numpyState(data)
+    mrtstate.state = ndata
     return ndata
 
+'''
+def readState(ser,init=0):
+    # Initialize the dictionary, unless a previous state is passed in
+    if init == 0:
+        data = initState()
+    else:
+        data = init
+    buf = read_ser_buffer_to_eot(ser)
+    data = parseState(buf,data)
+    if data is not 0:
+        mrtstate.state = numpyState(data)
+    #else:
+    #    ndata = mrtstate.state #None
+    
+    return #ndata
+
+def readState(ser):
+    # Initialize the dictionary, unless a previous state is passed in
+    data = initState()
+    buf = read_ser_buffer_to_eot(ser)
+    data = parseState(buf,data)
+    if data is not None:
+        mrtstate.state = numpyState(data)
+    #else:
+    #    ndata = mrtstate.state #None
+    
+    return #ndata
+'''
 # GODDAMMIT!  There are two places where I read data: readState and readStream
 def readStream(ser):
     """ Generalize read_data to read an arbitrary list """
@@ -194,12 +179,11 @@ def StdCmd(ser,cmd):
     ser.write(cmd)
     return readState(ser)
 
-def Scan(ser,deg):
-    ser.write(SCAN)
-    ser.write(str.encode(deg))
-    data = readStream(ser)
-    mrtstate.state = readState(ser)
-    return data
+def PrintState():
+    """ Make a pretty version of the current state """
+    print ('AZ:',mrtstate.state['azDeg'][0],'EL:',mrtstate.state['elDeg'][0])
+    print ('Current axis:',mrtstate.state['axis'][0])
+    return
 
 def read_ser_buffer_to_eot(ser):
     output = []
@@ -209,6 +193,13 @@ def read_ser_buffer_to_eot(ser):
         #print(buf[:-1])
         buf = ser.readline()
     return output
+
+def Scan(ser,deg):
+    ser.write(SCAN)
+    ser.write(str.encode(deg))
+    data = readStream(ser)
+    mrtstate.state = readState(ser)
+    return data
 
 def PlotData(ndata):
     plt.figure(1,figsize=(10,7))
@@ -236,11 +227,6 @@ def PlotData(ndata):
     plt.show()
     return
 
-def PrintState():
-    """ Make a pretty version of the current state """
-    print ('AZ:',mrtstate.state['azDeg'][0],'EL:',mrtstate.state['elDeg'][0])
-    print ('Current axis:',mrtstate.state['axis'][0])
-    return
 '''
 def GoTo(current_state,azG=None,elG=None):
     if azG == None:
@@ -300,46 +286,61 @@ def GoTo(azG=None,elG=None):
     "THIS IS A NEW ATTEMP"
     if (azG >=0. and azG <= 360.):
         mrtstate.state = StdCmd(ser,AZIMUTH)
-        print(mrtstate.state)
+        #print(mrtstate.state)
         mrtstate.state = StdCmd(ser,ENABLE)
         if d_az < 0:
             # If moving to a less positive azimuth, go CCW
             mrtstate.state = StdCmd(ser,FORWARD)
             print ('Starting from')
             PrintState()
-            d = Scan(ser,str(np.abs(d_az)))
+            #d = Scan(ser,str(np.abs(d_az)))
+            ser.write(SCAN(ser,str(np.abs(d_az))))
             mrtstate.state = readState(ser)
             azG=None
+            print('hi1')
         else:
             # If moving to a more positive azimuth, go CW
             mrtstate.state = StdCmd(ser,AZIMUTH)
+            print('hi1')
             mrtstate.state = StdCmd(ser,REVERSE)
+            print('hi3')
             print ('Starting from')
+            print('hi4')
             PrintState()
-            d = Scan(ser,str(np.abs(d_az)))
+            print('hi5')
+            #d = Scan(ser,str(np.abs(d_az)))
+            SCAN(ser,(np.abs(d_az)))
+            #ser.write(str.encode(np.abs(d_az)))
+            print('hi6')
             mrtstate.state = readState(ser)
+            print('hi7')
             azG=None
+            print('hi8')
     else:
         print ('Requested az/el out of bounds')
         azG=None
         elG=None
     if (elG >= -eloff and elG <= 120.):
         mrtstate.state = StdCmd(ser,ELEVATION)
-        #current_state = StdCmd(ser,ENABLE)
+        mrtstate.state = StdCmd(ser,ENABLE)
         if d_el < 0:
             mrtstate.state = StdCmd(ser,REVERSE)
-            d = Scan(ser,str(np.abs(d_el)))
+            #d = Scan(ser,str(np.abs(d_el)))
+            ser.write(SCAN(ser,str(np.abs(d_el))))
             mrtstate.state = readState(ser)
             print ('Ending at')
             PrintState()
             elG=None
+            print('hi3')
         else:
             mrtstate.state = StdCmd(ser,FORWARD)
-            d = Scan(ser,str(np.abs(d_el)))
+            #d = Scan(ser,str(np.abs(d_el)))
+            ser.write(SCAN(ser,str(np.abs(d_el))))
             mrtstate.state = readState(ser)
             print ('Ending at')
             PrintState()
             elG=None
+            print('hi4')
     else:
         print ('Requested az/el out of bounds')
         azG=None
