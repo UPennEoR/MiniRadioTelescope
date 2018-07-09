@@ -15,7 +15,7 @@ import mrtstate
 import MRT_FUNC_PY3 as mrtf
 #from scipy.interpolate import griddata
 
-#%%
+#%
 # ----------------------------------------------------------------------------
 # Begin
 # ----------------------------------------------------------------------------
@@ -67,10 +67,12 @@ while(operate):
     if not var == 'Q':
         if (var == 'M'): # Make a map!
             cs = mrtf.StdCmd(ser,mrtf.REPORT_STATE)
-            az,el,pwr,mp,azi,eli = mrtf.RasterMap(cs)
+            #az,el,pwr,mp,azi,eli = mrtf.RasterMap()
             # Update the current state
-            current_state = mrtf.StdCmd(ser,mrtf.REPORT_STATE)
-            mrtf.PrintState()
+            current_state = mrtstate.state
+            #mrtf.PrintState()
+            mrtf.RasterMap()
+            current_state =  mrtf.StdCmd(ser,mrtf.REPORT_STATE)
         elif (var == 'MS'): # Make a map!
             cs = mrtf.StdCmd(ser,mrtf.REPORT_STATE)
             az,el,pwr,mp,azi,eli = mrtf.ScanSouthSky(cs)
@@ -84,13 +86,13 @@ while(operate):
             current_state =  mrtf.StdCmd(ser,mrtf.REPORT_STATE)
         elif (var == 'GA'):
             cs = mrtf.StdCmd(ser,mrtf.REPORT_STATE)
-            current_state = cs
-            mrtf.GoAz(cs)
+            current_state = mrtstate.state
+            mrtf.GoAz()
             current_state =  mrtf.StdCmd(ser,mrtf.REPORT_STATE)
         elif (var == 'GE'):
             cs = mrtf.StdCmd(ser,mrtf.REPORT_STATE)
-            current_state = cs
-            mrtf.GoEl(cs)
+            current_state = mrtstate.state
+            mrtf.GoEl()
             current_state =  mrtf.StdCmd(ser,mrtf.REPORT_STATE)
         elif (var == 'S'):
             print ("Sending "+var)
