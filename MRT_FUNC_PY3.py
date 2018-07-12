@@ -323,9 +323,12 @@ def RasterMap():
     ONE = 1.2
     ONEF = float(ONE)
     DIME = input("Elevation Dimension: ")
+    DIMEF = float(DIME)
     DIMEI = int(DIME)/2
     azM = azG-DIMF/2.
     elM = elG+DIMEI
+    #FIGX = 
+    #FIGY = 
     GoTo(azG=azM,elG=elM)
     #DIMX = input("X length: ")
     #DIMX = float(DIMX)
@@ -367,8 +370,8 @@ def RasterMap():
     #plt.show()
     plt.figure(2,figsize=(8,8))
     plt.clf()
-    eli = np.linspace(az.min(),az.max(),20)
-    azi = np.linspace(el.min(),el.max(),20)
+    eli = np.linspace(az.min(),az.max(),DIMF)
+    azi = np.linspace(el.min(),el.max(),DIMEF)
     # grid the data.
     zi = griddata((az, el), pwr, (eli[None,:], azi[:,None]), method='nearest')
     # contour the gridded data
@@ -459,10 +462,11 @@ def ScanSouthSky():
         StdCmd(ser,REVERSE)
         d = Scan(ser, ONEF)
 
-    #plt.show()plt.figure(2,figsize=(8,4))
+    #plt.show()
+    plt.figure(2,figsize=(8,4))
     plt.clf()
-    eli = np.linspace(az.min(),az.max(),80)
-    azi = np.linspace(el.min(),el.max(),180)
+    eli = np.linspace(az.min(),az.max(),180)
+    azi = np.linspace(el.min(),el.max(),80)
     # grid the data.
     zi = griddata((az, el), pwr, (eli[None,:], azi[:,None]), method='nearest')
     # contour the gridded data
