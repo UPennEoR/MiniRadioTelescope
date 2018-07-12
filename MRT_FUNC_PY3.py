@@ -133,19 +133,19 @@ def readStream(ser):
     data = initState()
     # Begin reading serial port
     buf = read_ser_buffer_to_eot(ser) #ser.readline()
-    print('1 BUFFER', buf[0])
+    #print('1 BUFFER', buf[0])
     # Read anything you see until you see BDTX
     while (buf[0] != BDTX):
         buf = read_ser_buffer_to_eot(ser) #ser.readline()
-        print('2 BUFFER:', buf[0])
+        #print('2 BUFFER:', buf[0])
     # Then read states
     while(buf[0] != EDTX):
         buf = read_ser_buffer_to_eot(ser)
         if (buf[0] != EDTX):
-            print(buf[0])
+            #print(buf[0])
             data = parseState(buf, data)
     ndata = numpyState(data)
-    StdCmd(ser,REPORT_STATE)
+    #StdCmd(ser,REPORT_STATE)
     return ndata
 
 def StdCmd(ser,cmd):
@@ -168,16 +168,16 @@ def read_ser_buffer_to_eot(ser):
     return output
 
 def Scan(ser,deg):
-    print('Writing',SCAN)
+    #print('Writing',SCAN)
     ser.write(SCAN)
     # The round statement is necessary to prevent a problem with interpretation
     # by the Arduino when converted to an ASCII string.
     # Is it possible to send floats directly to the Arduino?
     deg_str = str.encode(str(np.round(deg,3)))
-    print('Writing',deg_str)
+    #print('Writing',deg_str)
     ser.write(deg_str)
     data = readStream(ser)
-    StdCmd(ser,REPORT_STATE)
+    #StdCmd(ser,REPORT_STATE)
     return data
 
 def PlotData(ndata):
@@ -231,32 +231,30 @@ def GoTo(azG=None,elG=None):
     if (az_ok and el_ok):
         # Do the azimuth move
         StdCmd(ser,AZIMUTH)
-        print(mrtstate.state)
         StdCmd(ser,ENABLE)
-        print(mrtstate.state)
         print ('Azimuth move starting')
         PrintState()
         if d_az < 0:
             # If moving to a less positive azimuth, go CCW
-            StdCmd(ser,FORWARD)   
-            print(mrtstate.state)
+            StdCmd(ser,FORWARD)
         else:
             StdCmd(ser,REVERSE)
-            print(mrtstate.state)
-        print(str(np.abs(d_az)))
+        #print(str(np.abs(d_az)))
         Scan(ser,np.abs(d_az))
-        print('Azimuth move ended at')
-        print(mrtstate.state)
+        #print('Azimuth move ended at')
+        #PrintState()
         # Elevation move
         StdCmd(ser,ELEVATION)
         StdCmd(ser,ENABLE)
-        print ('Elevation move')
+        print ('Elevation move starting')
         PrintState()
         if d_el < 0:
-            mrtstate.state = StdCmd(ser,REVERSE)
+            StdCmd(ser,REVERSE)
         else:
-            mrtstate.state = StdCmd(ser,FORWARD)
+            StdCmd(ser,FORWARD)
         Scan(ser,np.abs(d_el))
+        StdCmd(ser,AZIMUTH)
+        StdCmd(ser,ENABLE)
         print ('Final state')
         PrintState()
     return
@@ -321,7 +319,7 @@ def RasterMap():
     elG = input("El: ")
     elG = float(elG)
     azM = azG-10.
-    elM = elG-10.
+    elM = elG+10.
     GoTo(azG=azM,elG=elM)
     #DIMX = input("X length: ")
     #DIMX = float(DIMX)
@@ -338,30 +336,30 @@ def RasterMap():
     az = np.array([])
     el = np.array([])
     pwr = np.array([])
-    for i in np.arange(10):
-        print (i,'of 10')
+    for i in np.arange(11):
+        print (i,'of 11')
         StdCmd(ser,AZIMUTH)
         StdCmd(ser,REVERSE)
-        Scan(ser,DIMF)
+        d = Scan(ser,DIMF)
         #plt.subplot(10,1,i+1)
         #plt.plot(d['azDeg'],d['pwr'])
-        az = np.append(az,['azDeg'])
-        el = np.append(el,['elDeg'])
-        pwr = np.append(pwr,['pwr'])
+        az = np.append(az,d['azDeg'])
+        el = np.append(el,d['elDeg'])
+        pwr = np.append(pwr,d['pwr'])
         StdCmd(ser,ELEVATION)
         StdCmd(ser,REVERSE)
-        Scan(ser,ONEF)
+        d= Scan(ser,ONEF)
         StdCmd(ser,AZIMUTH)
         StdCmd(ser,FORWARD)
-        Scan(ser,DIMF)
+        d = Scan(ser,DIMF)
         #plt.subplot(10,1,i+1)
         #plt.plot(d['azDeg'],d['pwr'])
-        az = np.append(az,['azDeg'])
-        el = np.append(el,['elDeg'])
-        pwr = np.append(pwr,['pwr'])
+        az = np.append(az,d['azDeg'])
+        el = np.append(el,d['elDeg'])
+        pwr = np.append(pwr,d['pwr'])
         StdCmd(ser,ELEVATION)
         StdCmd(ser,REVERSE)
-        Scan(ser,ONEF)
+        d = Scan(ser,ONEF)
     
     #plt.show()
     plt.figure(2,figsize=(8,8))
@@ -391,66 +389,79 @@ def RasterMap():
 
 def PrintMenu():
     """ Provide the user the available commands """
+    print()
     return
 
 def ScanSouthSky():
+        #DIMX = input("X length: ")
+    #DIMX = float(DIMX)
+    #DIMY = input("Y length: ")
+    #DIMY = float(DIMY)
+    DIM = 180
+    DIMF = float(DIM)
+    ONE = 1
+    ONEF = float(ONE)
+    Ac = 90
+    Acf = float(Ac)
+    Ec = 80
+    Ecf = float(Ec)
     
-    Saz = float(mrtstate.state['azDeg'][0])
-    Sel = float(mrtstate.state['elDeg'][0])
+    GoTo(azG=Acf,elG=Ecf)
     
-    if ((Saz >=89.5 and Saz <= 90.5) and (Sel >=79.5 and Sel<= 80.5)):
-            az = np.array([])
-            el = np.array([])
-            pwr = np.array([])
-            for i in np.arange(45):
-                print (i,'of 50')
-                StdCmd(ser,AZIMUTH)
-                StdCmd(ser,REVERSE)
-                d,cs = Scan(ser,'180')
-                #plt.subplot(10,1,i+1)
-                #plt.plot(d['azDeg'],d['pwr'])
-                az = np.append(az,d['azDeg'])
-                el = np.append(el,d['elDeg'])
-                pwr = np.append(pwr,d['pwr'])
-                StdCmd(ser,ELEVATION)
-                StdCmd(ser,REVERSE)
-                d,cs= Scan(ser,'1')
-                StdCmd(ser,AZIMUTH)
-                StdCmd(ser,FORWARD)
-                d,cs = Scan(ser,'180')
-                #plt.subplot(10,1,i+1)
-                #plt.plot(d['azDeg'],d['pwr'])
-                az = np.append(az,d['azDeg'])
-                el = np.append(el,d['elDeg'])
-                pwr = np.append(pwr,d['pwr'])
-                StdCmd(ser,ELEVATION)
-                StdCmd(ser,REVERSE)
-                d,cs = Scan(ser,'1')
-    
-            #plt.show()
-            plt.figure(2,figsize=(8,4))
-            plt.clf()
-            eli = np.linspace(az.min(),az.max(),90)
-            azi = np.linspace(el.min(),el.max(),180)
-            # grid the data.
-            zi = griddata((az, el), pwr, (eli[None,:], azi[:,None]), method='nearest')
-            # contour the gridded data
-            np.savez(file='map_'+time.ctime().replace(' ','_')+'.npz',
-                     az=az,el=el,pwr=pwr,zi=zi,azi=azi,eli=eli)
+    #Saz = float(mrtstate.state['azDeg'][0])
+    #Sel = float(mrtstate.state['elDeg'][0])
+    az = np.array([])
+    el = np.array([])
+    pwr = np.array([])
+    #if ((Saz >=89.5 and Saz <= 90.5) and (Sel >=79.5 and Sel<= 80.5)):
+            #az = np.array([])
+            #el = np.array([])
+            #pwr = np.array([])
+    for i in np.arange(42):
+        print (i,'of 42')
+        StdCmd(ser,AZIMUTH)
+        StdCmd(ser,REVERSE)
+        d= Scan(ser,DIMF)
+        #plt.subplot(10,1,i+1)
+        #plt.plot(d['azDeg'],d['pwr'])
+        az = np.append(az,d['azDeg'])
+        el = np.append(el,d['elDeg'])
+        pwr = np.append(pwr,d['pwr'])
+        StdCmd(ser,ELEVATION)
+        StdCmd(ser,REVERSE)
+        d = Scan(ser,ONEF)
+        StdCmd(ser,AZIMUTH)
+        StdCmd(ser,FORWARD)
+        d = Scan(ser,DIMF)
+        #plt.subplot(10,1,i+1)
+        #plt.plot(d['azDeg'],d['pwr'])
+        az = np.append(az,d['azDeg'])
+        el = np.append(el,d['elDeg'])
+        pwr = np.append(pwr,d['pwr'])
+        StdCmd(ser,ELEVATION)
+        StdCmd(ser,REVERSE)
+        d = Scan(ser, ONEF)
 
+    #plt.show()plt.figure(2,figsize=(8,4))
+    plt.clf()
+    eli = np.linspace(az.min(),az.max(),80)
+    azi = np.linspace(el.min(),el.max(),180)
+    # grid the data.
+    zi = griddata((az, el), pwr, (eli[None,:], azi[:,None]), method='nearest')
+    # contour the gridded data
+    np.savez(file='map_'+time.ctime().replace(' ','_')+'.npz',
+             az=az,el=el,pwr=pwr,zi=zi,azi=azi,eli=eli)
     
-            plt.imshow(np.flipud(zi),aspect='auto',cmap=plt.cm.jet,
-                       extent=[eli.min(),eli.max(),azi.min(),azi.max()])
-            plt.colorbar()
-            #CS = plt.contour(zi,5,linewidths=1,colors='w')
-            plt.contour(eli,azi,zi,5,linewidths=1,colors='w')
-            #CS = plt.contourf(eli,azi,zi,10,cmap=plt.cm.jet)
-            plt.axis('equal')
-            plt.xlabel('Azimuth (degrees)')
-            plt.ylabel('Elevation (degrees)')
-            plt.savefig(time.ctime().replace(' ','_')+'.png')
-            plt.show()
-    else:
-        print('Telescope must be in position Az = 90 El = 90 for this function.')
+    plt.imshow(np.flipud(zi),aspect='auto',cmap=plt.cm.jet,
+               extent=[eli.min(),eli.max(),azi.min(),azi.max()])
+    plt.colorbar()
+    #CS = plt.contour(zi,5,linewidths=1,colors='w')
+    plt.contour(eli,azi,zi,5,linewidths=1,colors='w')
+    #CS = plt.contourf(eli,azi,zi,10,cmap=plt.cm.jet)
+    plt.axis('equal')
+    plt.xlabel('Azimuth (degrees)')
+    plt.ylabel('Elevation (degrees)')
+    plt.savefig(time.ctime().replace(' ','_')+'.png')
+    plt.show()
                 
     return (az,el,pwr,zi,azi,eli)
