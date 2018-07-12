@@ -73,12 +73,13 @@ while(operate):
             #mrtf.PrintState()
             mrtf.RasterMap()
             current_state =  mrtf.StdCmd(ser,mrtf.REPORT_STATE)
-        elif (var == 'MS'): # Make a map!
+        elif (var == 'MS'): # Make a map of the South Sky
             cs = mrtf.StdCmd(ser,mrtf.REPORT_STATE)
-            az,el,pwr,mp,azi,eli = mrtf.ScanSouthSky(cs)
+            #az,el,pwr,mp,azi,eli = mrtf.ScanSouthSky(cs)
             # Update the current state
-            current_state = mrtf.StdCmd(ser,mrtf.REPORT_STATE)
-            mrtf.PrintState()
+            current_state = mrtstate.state
+            mrtf.ScanSouthSky()
+            current_state =  mrtf.StdCmd(ser,mrtf.REPORT_STATE)
         elif (var == 'G'):
             cs = mrtf.StdCmd(ser,mrtf.REPORT_STATE)
             current_state = mrtstate.state
