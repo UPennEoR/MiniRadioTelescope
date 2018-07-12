@@ -6,14 +6,10 @@ Created on Mon Jul  2 15:19:46 2018
 @author: oscartinney
 """
 
-#import serial
 import numpy as np
-#import matplotlib.pyplot as plt
 import time
-#import MRTtools as mrt
 import mrtstate
 import MRT_FUNC_PY3 as mrtf
-#from scipy.interpolate import griddata
 
 #%
 # ----------------------------------------------------------------------------
@@ -63,7 +59,7 @@ but rather scans, that command is special """
 
 operate=True
 while(operate):
-    var = input("Enter command to transmit, Q to quit: ")
+    var = input("Enter command to transmit, H for help, Q to quit: ")
     if not var == 'Q':
         if (var == 'M'): # Make a map!
             cs = mrtf.StdCmd(ser,mrtf.REPORT_STATE)
@@ -85,6 +81,10 @@ while(operate):
             current_state = mrtstate.state
             mrtf.GoTo()
             current_state =  mrtf.StdCmd(ser,mrtf.REPORT_STATE)
+        elif (var == 'H'):
+            mrtf.PrintMenu()
+        elif (var == 'CS'):
+            print(mrtstate.state)
         elif (var == 'GA'):
             cs = mrtf.StdCmd(ser,mrtf.REPORT_STATE)
             current_state = mrtstate.state
