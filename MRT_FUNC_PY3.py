@@ -318,17 +318,20 @@ def RasterMap():
     azG = float(azG)
     elG = input("El: ")
     elG = float(elG)
-    azM = azG-10.
-    elM = elG+10.
+    DIM = input("Azimuth Dimension: ")
+    DIMF = float(DIM)
+    ONE = 1.2
+    ONEF = float(ONE)
+    DIME = input("Elevation Dimension: ")
+    DIMEI = int(DIME)/2
+    azM = azG-DIMF/2.
+    elM = elG+DIMEI
     GoTo(azG=azM,elG=elM)
     #DIMX = input("X length: ")
     #DIMX = float(DIMX)
     #DIMY = input("Y length: ")
     #DIMY = float(DIMY)
-    DIM = 20
-    DIMF = float(DIM)
-    ONE = 1
-    ONEF = float(ONE)
+   
     
     #plt.figure(1)
     #plt.clf()
@@ -336,8 +339,8 @@ def RasterMap():
     az = np.array([])
     el = np.array([])
     pwr = np.array([])
-    for i in np.arange(11):
-        print (i,'of 11')
+    for i in np.arange(DIMEI):
+        print (i,'of ',DIMEI)
         StdCmd(ser,AZIMUTH)
         StdCmd(ser,REVERSE)
         d = Scan(ser,DIMF)
@@ -384,12 +387,26 @@ def RasterMap():
     plt.ylabel('Elevation (degrees)')
     plt.savefig(time.ctime().replace(' ','_')+'.png')
     plt.show()
+    print('Final State')
+    PrintState()
     
     return (az,el,pwr,zi,azi,eli)
 
 def PrintMenu():
     """ Provide the user the available commands """
-    print()
+    print('A: Set Azimuth')
+    print('L: Set Elevation')
+    print('E: Enable')
+    print('F: Set Forward Direction')
+    print('R: Set Reverse Direction')
+    print('S: Scan')
+    print('G: Go to specific coordinates')
+    print('GA: Go to specific Azimuth')
+    print('GE: Go to specific Elevation')
+    print('M: Map a grid around a specific coordinate with variable dimensions')
+    print('MS: Map the entire south sky')
+    print('CS: Get the full current state of the telescope')
+    print('Q: Quit program')
     return
 
 def ScanSouthSky():
@@ -463,5 +480,8 @@ def ScanSouthSky():
     plt.ylabel('Elevation (degrees)')
     plt.savefig(time.ctime().replace(' ','_')+'.png')
     plt.show()
+    
+    print('Final State')
+    PrintState()
                 
-    return (az,el,pwr,zi,azi,eli)
+    return
