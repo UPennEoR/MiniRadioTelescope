@@ -16,13 +16,11 @@ print ('with baud',mrtf.baud)
 whereas the Pi does not.  So we will be super explicit. """
 # Open the port
 ser = mrtf.serial.Serial(mrtf.port, mrtf.baud)
-#%
 print ('Before flushing buffers')
 print ('Bytes in waiting', ser.inWaiting())
 mrtf.FlushSerialBuffers(ser)
 print ('After flushing buffers')
 print ('Bytes in waiting', ser.inWaiting())
-#%
 print ('Resetting Arduino')
 print ('Before reset')
 print ('Bytes in waiting', ser.inWaiting())
@@ -31,8 +29,6 @@ mrtf.ResetArduinoUno(ser,timeout=15,nbytesExpected=mrtf.nIDBytes)
 print ('After reset')
 print ('Bytes in waiting', ser.inWaiting())
 print (ser.inWaiting())
-
-#%
 
 output = mrtf.read_ser_buffer_to_eot(ser)
 print(output)
