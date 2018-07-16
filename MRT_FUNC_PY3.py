@@ -11,7 +11,6 @@ import matplotlib.pyplot as plt
 import time
 import MRTtools as mrt
 import mrtstate
-#import MRT_PY3_temp as mrt3
 from scipy.interpolate import griddata
 #%%
 # Don't yet have a good way of auto-detecting which port is Arduino
@@ -67,20 +66,19 @@ def WaitForInputBytes(timeout=10,nbytesExpected=1):
     return nbytes, dt
 
 def ResetArduinoUno(ser,timeout=10,nbytesExpected=1):
+    """Reset the Arduino to clear previous data"""
     ser.setDTR(False)
     time.sleep(1)
     ser.setDTR(True)
-    #time.sleep(3)
     nbytes,dt=WaitForInputBytes(nbytesExpected=nbytesExpected)
     print (nbytes,'bytes found after',dt,'seconds')
     return
 
 def FlushSerialBuffers(ser):
+    """Flush previous data out of the buffers"""
     ser.flushInput()
     ser.flushOutput()
     return
-
-# --------------------------------------------
 
 def initState():
     """ Initialize a dictionary to hold the state """
@@ -90,6 +88,7 @@ def initState():
     return state
         
 def numpyState(state):
+    """Get the state going"""
     ndata = {}
     for i in np.arange(len(mrtstate.state_vars)):
         ndata[mrtstate.state_vars[i]] = np.array(state[mrtstate.state_vars[i]],
@@ -116,7 +115,7 @@ def parseState(buffer,state):
     return state
 
 def readState(ser,init=None):
-    # Initialize the dictionary, unless a previous state is passed in
+    """Initialize the dictionary, unless a previous state is passed in"""
     if init == None:
         data = initState()
     else:
@@ -127,7 +126,6 @@ def readState(ser,init=None):
     mrtstate.state = ndata
     return ndata
 
-# GODDAMMIT!  There are two places where I read data: readState and readStream
 def readStream(ser):
     """ Generalize read_data to read an arbitrary list """
     data = initState()
@@ -149,6 +147,7 @@ def readStream(ser):
     return ndata
 
 def StdCmd(ser,cmd):
+    """Use instead of writing ser.write all the time"""
     ser.write(cmd)
     return readState(ser)
 
@@ -168,19 +167,19 @@ def read_ser_buffer_to_eot(ser):
     return output
 
 def Scan(ser,deg):
-    #print('Writing',SCAN)
+    """Scan a specified number of degrees on the current axis in the current direction"""
     ser.write(SCAN)
     # The round statement is necessary to prevent a problem with interpretation
     # by the Arduino when converted to an ASCII string.
     # Is it possible to send floats directly to the Arduino?
     deg_str = str.encode(str(np.round(deg,3)))
-    #print('Writing',deg_str)
     ser.write(deg_str)
     data = readStream(ser)
     #StdCmd(ser,REPORT_STATE)
     return data
 
 def PlotData(ndata):
+    """Plot the data for the Scan function"""
     plt.figure(1,figsize=(10,7))
     plt.clf()
     plt.subplot(311)
@@ -201,12 +200,13 @@ def PlotData(ndata):
     plt.plot(ndata['my'],label='my')
     plt.plot(ndata['mz'],label='mz')
     plt.legend()
-    #N = 10
     #plt.plot(x,np.convolve(pwr, np.ones((N,))/N, mode='same'),'r')
     plt.show()
     return
 
 def GoTo(azG=None,elG=None):
+    """Travel to a specified azimuth and elevation"""
+    #user inputs for coordinates
     if azG == None:
         azG = input("Az: ")
         azG = float(azG)
@@ -217,6 +217,7 @@ def GoTo(azG=None,elG=None):
     d_el = elG - float(mrtstate.state['elDeg'][0])
     print ('d_az: ',d_az)
     print ('d_el: ',d_el)
+    #check to make sure it's clear to move
     if (azG >=0. and azG <= 360.):
         az_ok = True
     else:
@@ -227,7 +228,7 @@ def GoTo(azG=None,elG=None):
     else:
         el_ok = False
         print ('Requested elevation out of bounds')
-        
+    #Move    
     if (az_ok and el_ok):
         # Do the azimuth move
         StdCmd(ser,AZIMUTH)
@@ -239,10 +240,7 @@ def GoTo(azG=None,elG=None):
             StdCmd(ser,FORWARD)
         else:
             StdCmd(ser,REVERSE)
-        #print(str(np.abs(d_az)))
         Scan(ser,np.abs(d_az))
-        #print('Azimuth move ended at')
-        #PrintState()
         # Elevation move
         StdCmd(ser,ELEVATION)
         StdCmd(ser,ENABLE)
@@ -260,6 +258,7 @@ def GoTo(azG=None,elG=None):
     return
 
 def GoAz(azGa=None):
+    """Go to a specific Azimuth without changing elevation"""
     if azGa == None:
         azGa = input("Az: ")
         azGa = float(azGa)
@@ -286,6 +285,7 @@ def GoAz(azGa=None):
         azGa=None
 
 def GoEl(elGe=None):
+    """Go to a specific elevation without changing azimuth"""
     if elGe == None:
         elGe = input("El: ")
         elGe = float(elGe)
@@ -311,13 +311,13 @@ def GoEl(elGe=None):
         elGe=None
     
 def RasterMap():
-    """ Super hard coded to get something going.  Start where you are, and
-    make a 20 x 20 degree map """
-
+    """Make a map centered at a given point, with given dimensions"""
+    #center point input
     azG = input("Az: ")
     azG = float(azG)
     elG = input("El: ")
     elG = float(elG)
+    #dimensions input
     DIM = input("Azimuth Dimension: ")
     DIMF = float(DIM)
     ONE = 1.2
@@ -327,18 +327,22 @@ def RasterMap():
     DIMEI = int(DIME)/2
     azM = azG-DIMF/2.
     elM = elG+DIMEI
-    #FIGX = 
-    #FIGY = 
-    GoTo(azG=azM,elG=elM)
-    #DIMX = input("X length: ")
-    #DIMX = float(DIMX)
-    #DIMY = input("Y length: ")
-    #DIMY = float(DIMY)
-   
+    #determine figure size based on inputs
+    if (DIMF<DIMEF):
+        x = 8
+        y = (DIMEF/DIMF)*8
+    elif (DIMF>DIMEF):
+        x =(DIMF/DIMEF)*8
+        y = 8
+    else:
+        x = 8
+        y = 8
+    #move to starting point    
+    GoTo(azG=azM,elG=elM)   
     
     #plt.figure(1)
     #plt.clf()
-    
+    #collect data
     az = np.array([])
     el = np.array([])
     pwr = np.array([])
@@ -367,8 +371,8 @@ def RasterMap():
         StdCmd(ser,REVERSE)
         d = Scan(ser,ONEF)
     
-    #plt.show()
-    plt.figure(2,figsize=(8,8))
+    #plot data
+    plt.figure(2,figsize=(x,y))
     plt.clf()
     eli = np.linspace(az.min(),az.max(),DIMF)
     azi = np.linspace(el.min(),el.max(),DIMEF)
@@ -378,7 +382,6 @@ def RasterMap():
     np.savez(file='map_'+time.ctime().replace(' ','_')+'.npz',
              az=az,el=el,pwr=pwr,zi=zi,azi=azi,eli=eli)
 
-    
     plt.imshow(np.flipud(zi),aspect='auto',cmap=plt.cm.jet,
                extent=[eli.min(),eli.max(),azi.min(),azi.max()])
     plt.colorbar()
@@ -413,37 +416,29 @@ def PrintMenu():
     return
 
 def ScanSouthSky():
-        #DIMX = input("X length: ")
-    #DIMX = float(DIMX)
-    #DIMY = input("Y length: ")
-    #DIMY = float(DIMY)
+    """Scan the entire south sky, except between 80 and 90 degrees for elevation limited by telescope design"""
+    #define and convert variables for input to the scan function
     DIM = 180
     DIMF = float(DIM)
     ONE = 1
     ONEF = float(ONE)
+    #starting point of scan
     Ac = 90
     Acf = float(Ac)
     Ec = 80
     Ecf = float(Ec)
-    
     GoTo(azG=Acf,elG=Ecf)
     
-    #Saz = float(mrtstate.state['azDeg'][0])
-    #Sel = float(mrtstate.state['elDeg'][0])
+    #start data collection
     az = np.array([])
     el = np.array([])
     pwr = np.array([])
-    #if ((Saz >=89.5 and Saz <= 90.5) and (Sel >=79.5 and Sel<= 80.5)):
-            #az = np.array([])
-            #el = np.array([])
-            #pwr = np.array([])
+    
     for i in np.arange(42):
         print (i,'of 42')
         StdCmd(ser,AZIMUTH)
         StdCmd(ser,REVERSE)
         d= Scan(ser,DIMF)
-        #plt.subplot(10,1,i+1)
-        #plt.plot(d['azDeg'],d['pwr'])
         az = np.append(az,d['azDeg'])
         el = np.append(el,d['elDeg'])
         pwr = np.append(pwr,d['pwr'])
@@ -453,8 +448,6 @@ def ScanSouthSky():
         StdCmd(ser,AZIMUTH)
         StdCmd(ser,FORWARD)
         d = Scan(ser,DIMF)
-        #plt.subplot(10,1,i+1)
-        #plt.plot(d['azDeg'],d['pwr'])
         az = np.append(az,d['azDeg'])
         el = np.append(el,d['elDeg'])
         pwr = np.append(pwr,d['pwr'])
@@ -462,14 +455,14 @@ def ScanSouthSky():
         StdCmd(ser,REVERSE)
         d = Scan(ser, ONEF)
 
-    #plt.show()
-    plt.figure(2,figsize=(8,4))
+    #plot data
+    plt.figure(2,figsize=(18,8))
     plt.clf()
     eli = np.linspace(az.min(),az.max(),180)
     azi = np.linspace(el.min(),el.max(),80)
-    # grid the data.
+    #grid the data.
     zi = griddata((az, el), pwr, (eli[None,:], azi[:,None]), method='nearest')
-    # contour the gridded data
+    #contour the gridded data
     np.savez(file='map_'+time.ctime().replace(' ','_')+'.npz',
              az=az,el=el,pwr=pwr,zi=zi,azi=azi,eli=eli)
     
