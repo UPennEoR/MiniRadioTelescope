@@ -337,6 +337,11 @@ def RasterMap():
     else:
         x = 8
         y = 8
+    #Calculate approximate time to completion
+    AZT = DIMF*.35*DIMEF
+    ELT = DIMEF
+    TT = (AZT + ELT)/60
+    
     #move to starting point    
     GoTo(azG=azM,elG=elM)   
     
@@ -346,6 +351,7 @@ def RasterMap():
     az = np.array([])
     el = np.array([])
     pwr = np.array([])
+    print('Aproximate time to completion: ', TT, ' minutes')
     for i in np.arange(DIMEI):
         print (i,'of ',DIMEI)
         StdCmd(ser,AZIMUTH)
