@@ -1,0 +1,25 @@
+Arduino used previously lights up same as a working one, but I can't
+seem to connect to it.  :( Not clear if this has anything to do with
+powering it from the 9V regulator or not.
+
+Now using
+/anaconda3/bin/python
+Working in base ... I might end up regretting that.
+Note that this is a new Anaconda install since last used.
+
+Apparently `serial` is not a standard install with Anaconda?
+
+(base) modv-ve503-1809:MiniRadioTelescope jaguirre$ python MRT_PY3.py 
+Traceback (most recent call last):
+  File "MRT_PY3.py", line 6, in <module>
+    import MRT_FUNC_PY3 as mrtf
+  File "/Users/jaguirre/Software/MiniRadioTelescope/MRT_FUNC_PY3.py", line 8, in <module>
+    import serial
+ModuleNotFoundError: No module named 'serial'
+
+conda install pyserial
+
+DEATH TO PEOPLE WHO NAME THEIR PACKAGES DIFFERENT NAMES THAN THE IMPORT NAME!!!
+
+Nice!  Not having the position sensor not connected is OK!
+

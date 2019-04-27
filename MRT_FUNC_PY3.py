@@ -22,7 +22,9 @@ from scipy.interpolate import griddata
 #port = '/dev/cu.usbmodem14421'
 #port = '/dev/cu.usbmodem14611'
 #port = '/dev/cu.usbmodem14631'
-port = '/dev/cu.usbmodem14621'
+#port = '/dev/cu.usbmodem14621'
+# RHS USB connection on James' Mac 2019/04/26
+port = '/dev/cu.usbmodem14201'
 #port = '/dev/cu.usbmodem14331'
 baud = 115200
 nIDBytes = 18
@@ -46,11 +48,14 @@ SCAN = b'S'
 ENABLE = b'E'
 
 # For the nominal mounting in the observatory
-eloff = 35.5
-azoff = -191.
+#eloff = 35.5
+#azoff = -191.
 # For a general setup facing south
 #eloff = 35.5
 #azoff = -180.
+# Just start at zero
+eloff = 0.0
+azoff = 180.0
 
 def WaitForInputBytes(timeout=10,nbytesExpected=1):
     """ Wait for bytes to appear on the input serial buffer up to the timeout
@@ -182,7 +187,7 @@ def PlotData(ndata):
     """Plot the data for the Scan function"""
     plt.figure(1,figsize=(10,7))
     plt.clf()
-    plt.subplot(311)
+    #plt.subplot(311)
     if (ndata['axis'][0] == 'L'):
         x = ndata['elDeg']
     if (ndata['axis'][0] == 'A'):
@@ -190,16 +195,16 @@ def PlotData(ndata):
     plt.plot(x,ndata['pwr'])
     plt.xlabel('Angle (degrees)')
     plt.ylabel(r'Power ($\mu$W)')
-    plt.subplot(312)
-    plt.plot(ndata['ax'],label='ax')
-    plt.plot(ndata['ay'],label='ay')
-    plt.plot(ndata['az'],label='az')
-    plt.legend()
-    plt.subplot(313)
-    plt.plot(ndata['mx'],label='mx')
-    plt.plot(ndata['my'],label='my')
-    plt.plot(ndata['mz'],label='mz')
-    plt.legend()
+    #plt.subplot(312)
+    #plt.plot(ndata['ax'],label='ax')
+    #plt.plot(ndata['ay'],label='ay')
+    #plt.plot(ndata['az'],label='az')
+    #plt.legend()
+    #plt.subplot(313)
+    #plt.plot(ndata['mx'],label='mx')
+    #plt.plot(ndata['my'],label='my')
+    #plt.plot(ndata['mz'],label='mz')
+    #plt.legend()
     #plt.plot(x,np.convolve(pwr, np.ones((N,))/N, mode='same'),'r')
     plt.show()
     return
