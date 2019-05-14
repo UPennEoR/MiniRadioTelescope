@@ -1,6 +1,19 @@
 Some notes on installing pyrtlsdr.
 
-The python portion seems to install withtou error using
+
+On Mac
+------
+Not available from conda?
+
+pip install pyrtlsdr
+
+
+
+
+On the Raspberry Pi
+-------------------
+
+The python portion seems to install without error using
 
 sudo pip install pyrtlsdr
 
