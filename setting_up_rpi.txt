@@ -1,0 +1,8 @@
+Seems like Anaconda / Miniconda is not the way to go for RPi.
+
+https://www.raspberrypi.org/documentation/linux/software/python.md
+
+How to build a kind of minimal stack
+
+https://geoffboeing.com/2016/03/scientific-python-raspberry-pi/
+
