@@ -54,8 +54,8 @@ ENABLE = b'E'
 #eloff = 35.5
 #azoff = -180.
 # Just start at zero
-eloff = 0.0
-azoff = 180.0
+eloff = -62.0
+azoff = 360.-201.
 
 def WaitForInputBytes(timeout=10,nbytesExpected=1):
     """ Wait for bytes to appear on the input serial buffer up to the timeout
