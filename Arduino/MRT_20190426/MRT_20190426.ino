@@ -417,7 +417,7 @@ void SetDirection(char direction)
     {
       digitalWrite(DIR, LOW); //Pull direction pin low to move "forward"
     } else{
-      digitalWrite(DIR, HIGH);
+      digitalWrite(DIR, LOW);
     }
     rot_sense = 1;
     
@@ -429,7 +429,7 @@ void SetDirection(char direction)
     {
       digitalWrite(DIR, HIGH); //Pull direction pin low to move "backward"
     } else{
-      digitalWrite(DIR, LOW);
+      digitalWrite(DIR, HIGH);
     }
     rot_sense = -1;
   //  Serial.println("Direction set to backward."); 
@@ -480,9 +480,9 @@ void TakeSteps(int steps)
   for(x= 1; x<steps; x++)  
   {
     digitalWrite(STP,HIGH); //Trigger one step forward
-    delay(1);
+    delayMicroseconds(500);
     digitalWrite(STP,LOW); //Pull step pin low so it can be triggered again
-    delay(1);
+    delayMicroseconds(500);
 
     if (step_mode == 'M'){
       NormAdd = 1./16.;

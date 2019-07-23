@@ -24,7 +24,9 @@ from scipy.interpolate import griddata
 #port = '/dev/cu.usbmodem14631'
 #port = '/dev/cu.usbmodem14621'
 # RHS USB connection on James' Mac 2019/04/26
-port = '/dev/cu.usbmodem14201'
+#port = '/dev/cu.usbmodem14201'
+# LHS USB conection on James' Mac 2019/07/19
+port = '/dev/cu.usbmodem14101'
 #port = '/dev/cu.usbmodem14331'
 baud = 115200
 nIDBytes = 18
@@ -54,8 +56,8 @@ ENABLE = b'E'
 #eloff = 35.5
 #azoff = -180.
 # Just start at zero
-eloff = -62.0
-azoff = 360.-201.
+eloff = 0.
+azoff = -180.
 
 def WaitForInputBytes(timeout=10,nbytesExpected=1):
     """ Wait for bytes to appear on the input serial buffer up to the timeout
