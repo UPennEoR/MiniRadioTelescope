@@ -1,4 +1,4 @@
-0#!/usr/bin/env python2
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
 Created on Wed Jul 26 21:55:36 2017
@@ -36,7 +36,7 @@ plt.figure(1)
 plt.clf()
 
 for freq in freqs:
-    print freq
+    print(freq)
     sdr.center_freq = freq
     samples = sdr.read_samples(256*1024)
     fc_mhz = freq/1e6
