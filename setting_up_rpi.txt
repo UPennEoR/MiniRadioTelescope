@@ -6,3 +6,4 @@ How to build a kind of minimal stack
 
 https://geoffboeing.com/2016/03/scientific-python-raspberry-pi/
 
+

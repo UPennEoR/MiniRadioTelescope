@@ -25,6 +25,8 @@ from scipy.interpolate import griddata
 #port = '/dev/cu.usbmodem14621'
 # RHS USB connection on James' Mac 2019/04/26
 #port = '/dev/cu.usbmodem14201'
+# LHS USB conection on James' Mac 2019/07/19
+#port = '/dev/cu.usbmodem14101'
 #port = '/dev/cu.usbmodem14331'
 port = '/dev/ttyACM0'
 baud = 115200
@@ -48,6 +50,19 @@ REVERSE = b'R'
 SCAN = b'S'
 ENABLE = b'E'
 
+<<<<<<< HEAD
+=======
+# For the nominal mounting in the observatory
+#eloff = 35.5
+#azoff = -191.
+# For a general setup facing south
+#eloff = 35.5
+#azoff = -180.
+# Just start at zero
+eloff = 0.
+azoff = -180.
+
+>>>>>>> f03f1fb8914fd815361cea8904e5a6926da6b4ef
 def WaitForInputBytes(timeout=10,nbytesExpected=1):
     """ Wait for bytes to appear on the input serial buffer up to the timeout
     specified, in seconds """
