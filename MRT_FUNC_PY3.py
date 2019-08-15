@@ -24,8 +24,9 @@ from scipy.interpolate import griddata
 #port = '/dev/cu.usbmodem14631'
 #port = '/dev/cu.usbmodem14621'
 # RHS USB connection on James' Mac 2019/04/26
-port = '/dev/cu.usbmodem14201'
+#port = '/dev/cu.usbmodem14201'
 #port = '/dev/cu.usbmodem14331'
+port = '/dev/ttyACM0'
 baud = 115200
 nIDBytes = 18
 # Should remove this and do the initialization of the serial port in the main
@@ -46,16 +47,6 @@ FORWARD = b'F'
 REVERSE = b'R'
 SCAN = b'S'
 ENABLE = b'E'
-
-# For the nominal mounting in the observatory
-#eloff = 35.5
-#azoff = -191.
-# For a general setup facing south
-#eloff = 35.5
-#azoff = -180.
-# Just start at zero
-eloff = -62.0
-azoff = 360.-201.
 
 def WaitForInputBytes(timeout=10,nbytesExpected=1):
     """ Wait for bytes to appear on the input serial buffer up to the timeout
@@ -101,8 +92,8 @@ def numpyState(state):
     ndata['pwr'] = mrt.zx47_60(ndata['voltage'])
     # Both readState and readStream run through here.
     # Apply offsets
-    ndata['azDeg'] = np.round(np.mod(-ndata['azDeg'] - azoff,360),3)
-    ndata['elDeg'] = np.round(ndata['elDeg']-eloff, 3)
+    ndata['azDeg'] = np.round(np.mod(-ndata['azDeg'] - mrtstate.offsets['azoff'] ,360),3)
+    ndata['elDeg'] = np.round(ndata['elDeg'] - mrtstate.offsets['eloff'], 3)
     return ndata
 
 def parseState(buffer,state):
@@ -228,7 +219,7 @@ def GoTo(azG=None,elG=None):
     else:
         az_ok = False
         print ('Requested azimuth out of bounds')
-    if (elG >= -eloff and elG <= 120.):
+    if (elG >= -mrtstate.offsets['eloff'] and elG <= 120.):
         el_ok = True
     else:
         el_ok = False
@@ -296,7 +287,7 @@ def GoEl(elGe=None):
         elGe = float(elGe)
     d_elge = elGe - float(mrtstate.state['elDeg'][0])
     print ('d_el: ',d_elge)
-    if (elGe >= -eloff and elGe <= 120.):
+    if (elGe >= -mrtstate.offsets['eloff'] and elGe <= 120.):
         StdCmd(ser,ELEVATION)
         StdCmd(ser,ENABLE)
         print ('Elevation move starting')

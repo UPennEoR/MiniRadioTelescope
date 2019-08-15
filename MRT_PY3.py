@@ -34,10 +34,27 @@ output = mrtf.read_ser_buffer_to_eot(ser)
 print(output)
 #%%
 
+# For the nominal mounting in the observatory
+#eloff = 35.5
+#azoff = -191.
+# For a general setup facing south
+#eloff = 35.5
+#azoff = -180.
+# Just start at zero
+mrtstate.offsets['eloff'] = 0.
+mrtstate.offsets['azoff'] = -180.
+
+print(mrtstate.offsets)
+
 # Initialize the current state
 ser.write(mrtf.REPORT_STATE)
 mrtstate.state = mrtf.readState(ser)
+
+
+
 mrtf.PrintState()
+
+
 
 #%%
 
@@ -74,7 +91,8 @@ while(operate):
         elif (var == 'H'):
             mrtf.PrintMenu()
         elif (var == 'CS'):
-            print(mrtstate.state)
+            #print(mrtstate.state)
+            mrtf.PrintState()
         elif (var == 'GA'):
             cs = mrtf.StdCmd(ser,mrtf.REPORT_STATE)
             current_state = mrtstate.state
@@ -119,6 +137,63 @@ while(operate):
                 #    data[key].append(dummy[key][0])
             #ndata = numpyState(data)
             #PlotData(ndata)
+        elif (var == 'CCW'):
+            mrtf.StdCmd(ser, mrtf.AZIMUTH)
+            mrtf.StdCmd(ser, mrtf.ENABLE)
+            mrtf.StdCmd(ser, mrtf.FORWARD)
+        elif (var == 'CW'):
+            mrtf.StdCmd(ser, mrtf.AZIMUTH)
+            mrtf.StdCmd(ser, mrtf.ENABLE)
+            mrtf.StdCmd(ser, mrtf.REVERSE)
+        elif (var == 'UP'):
+            mrtf.StdCmd(ser, mrtf.ELEVATION)
+            mrtf.StdCmd(ser, mrtf.ENABLE)
+            mrtf.StdCmd(ser, mrtf.FORWARD)
+        elif (var == 'DOWN'):
+            mrtf.StdCmd(ser, mrtf.ELEVATION)
+            mrtf.StdCmd(ser, mrtf.ENABLE)
+            mrtf.StdCmd(ser, mrtf.REVERSE)
+        elif (var == 'SETPOS'):
+            mrtf.PrintState()
+            newaz = float(input("New azimuth: "))
+            #print('Current azimuth', mrtstate.state['azDeg'])
+            curr_azoff = mrtstate.offsets['azoff']
+            #print('Current offset', curr_azoff)
+            arduino_az = mrtstate.state['azDeg'] + curr_azoff
+            mrtstate.offsets['azoff'] = arduino_az - newaz 
+            #print(mrtf.azoff)
+            newel = float(input("New elevation: "))
+            curr_eloff = mrtstate.offsets['eloff']
+            arduino_el = mrtstate.state['elDeg'] + curr_eloff
+            mrtstate.offsets['eloff'] = arduino_el - newel
+            current_state =  mrtf.StdCmd(ser,mrtf.REPORT_STATE)
+            mrtf.PrintState()
+        elif (var == 'S'):
+            print ("Sending "+var)
+            ser.write(mrtf.SCAN)
+            deg = input("Enter number of degrees to turn: ")
+            print ("Sending "+deg)
+            ser.write(str.encode(deg))
+            print ("Reading data")
+            ndata = mrtf.readStream(ser)
+            current_state = mrtf.readState(ser)
+            mrtf.PrintState()
+            # Convert
+            #ndata = numpyState(ndata)
+            # Save
+            np.savez(file=time.ctime().replace(' ','_')+'.npz',
+                     ndata=ndata)
+            # Plot
+            mrtf.PlotData(ndata)
+        elif (var == 'X'):
+            Ndatapts = input("Enter number of data points: ")
+            ser.write(mrtf.REPORT_STATE)
+            # Initialize the data variable
+            data = mrtf.readState(ser)
+            for i in np.arange(int(Ndatapts)-1):
+                ser.write(mrtf.REPORT_STATE)
+                current_state = mrtf.readState(ser)
+                mrtf.PrintState()
         else:
             # Commands that get passed along
             print ("Sending "+var)

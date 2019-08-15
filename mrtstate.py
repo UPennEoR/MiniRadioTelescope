@@ -25,7 +25,8 @@ state_vars = ['lastCMDvalid',
               'mz',
               'pitch',
               'roll',
-              'heading']
+              'heading'
+              ]
 
 state_dtypes=['<U16', #'string',
               'float64',
@@ -46,8 +47,12 @@ state_dtypes=['<U16', #'string',
               'float64',
               'float64',
               'float64',
-              'float64']
+              'float64'
+             ]
 
 state = {}
 for state_var in state_vars:
     state[state_var] = []
+
+offsets = {'azoff': 0.0,
+           'eloff': 0.0}
