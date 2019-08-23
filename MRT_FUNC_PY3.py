@@ -50,8 +50,8 @@ REVERSE = b'R'
 SCAN = b'S'
 ENABLE = b'E'
 
-<<<<<<< HEAD
-=======
+##<<<<<<< HEAD
+#=======
 # For the nominal mounting in the observatory
 #eloff = 35.5
 #azoff = -191.
@@ -62,7 +62,7 @@ ENABLE = b'E'
 eloff = 0.
 azoff = -180.
 
->>>>>>> f03f1fb8914fd815361cea8904e5a6926da6b4ef
+#>>>>>>> f03f1fb8914fd815361cea8904e5a6926da6b4ef
 def WaitForInputBytes(timeout=10,nbytesExpected=1):
     """ Wait for bytes to appear on the input serial buffer up to the timeout
     specified, in seconds """
