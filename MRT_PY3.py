@@ -50,8 +50,6 @@ print(mrtstate.offsets)
 ser.write(mrtf.REPORT_STATE)
 mrtstate.state = mrtf.readState(ser)
 
-
-
 mrtf.PrintState()
 
 
@@ -196,6 +194,7 @@ while(operate):
                 mrtf.PrintState()
         else:
             # Commands that get passed along
+            print("Sending command direct to Arduino")
             print ("Sending "+var)
             ser.write(str.encode(var))
             # Read back any reply
