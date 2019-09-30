@@ -11,7 +11,7 @@ import rtlsdr
 import numpy as np
 import time
 
-f_min = 64e6
+f_min = 750e6
 f_max = 1700e6
 rate_best = 2.4e6
 df = rate_best
