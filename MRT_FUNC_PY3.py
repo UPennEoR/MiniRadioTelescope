@@ -237,8 +237,13 @@ def GoTo(azG=None,elG=None):
     if (elG >= -mrtstate.offsets['eloff'] and elG <= 120.):
         el_ok = True
     else:
-        el_ok = False
         print ('Requested elevation out of bounds')
+        var = input("Are you sure? (Y/N) ")
+        if var == 'Y':
+            el_ok = True
+        else:
+            el_ok = False
+
     #Move    
     if (az_ok and el_ok):
         # Do the azimuth move
