@@ -1,9 +1,13 @@
+import os
+import sys
 import tkinter as tk
 from tkinter import ttk
 from matplotlib import pyplot as plt
 from matplotlib import style
 from matplotlib.backends._backend_tk import NavigationToolbar2Tk
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+
+debug = False
 
 mrtGUI = tk.Tk()
 mrtGUI.title('Mini Radio Telescope')
@@ -13,6 +17,33 @@ mrtGUI.geometry('1280x800')
 figScan = plt.figure()  # figsize=(5, 4), dpi=100
 a = figScan.add_subplot(111)
 style.use('ggplot')
+
+
+def portList(portDirectory='/dev'):  # Finds possible ports for your OS
+    # Variables
+    linuxPortPrefix = 'tty'
+    macOSPortPrefix = 'cu.usbmodem'
+    ports = []
+
+    # Functions
+    def portSearch(portPrefix):
+        for file in os.listdir(portDirectory):
+            if file.startswith(portPrefix):
+                ports.append(os.path.join(portDirectory, file))
+
+    # Logic
+    if sys.platform.startswith('linux'):
+        portSearch(linuxPortPrefix)
+    elif sys.platform.startswith('darwin'):
+        portSearch(macOSPortPrefix)
+
+    # Debug
+    if debug:
+        print('DEBUG: The following are possible Arduino ports: ')
+        print('DEBUG: ' + str(ports))
+
+    return ports
+
 
 # Notebooks
 tab_main = ttk.Notebook(mrtGUI)
@@ -66,9 +97,10 @@ varScanStartElevation = tk.StringVar()
 varScanDirection = tk.StringVar()
 varScanAmount = tk.StringVar()
 optionListSerialPort = ['AUTO']
+for i in portList():
+    optionListSerialPort.append(i)
 optionListBaudrate = [9600, 14400, 19200, 28800, 38400, 56000, 57600, 115200]
 optionListScanDirection = ['Up', 'Down', 'Clockwise', 'Counterclockwise']
-
 
 # # Widgets # #
 # Connection #
