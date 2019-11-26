@@ -80,27 +80,27 @@ state_vars = ['lastCMDvalid',
               'heading'
               ]
 
-state_dtypes=['<U16', #'string',
-              'float64',
-              'int64',
-              'float64',
-              'int64',
-              '<U16', #'string',,
-              '<U16', #'string',
-              'int64',
-              'int',
-              'int',
-              'float64',
-              'float64',
-              'float64',
-              'float64',
-              'float64',
-              'float64',
-              'float64',
-              'float64',
-              'float64',
-              'float64'
-             ]
+state_dtypes = ['<U16',  # 'string',
+                'float64',
+                'int64',
+                'float64',
+                'int64',
+                '<U16',  # 'string',,
+                '<U16',  # 'string',
+                'int64',
+                'int',
+                'int',
+                'float64',
+                'float64',
+                'float64',
+                'float64',
+                'float64',
+                'float64',
+                'float64',
+                'float64',
+                'float64',
+                'float64'
+                ]
 
 state = {}
 for state_var in state_vars:
@@ -111,6 +111,7 @@ offsets = {'azoff': 0.0,
 
 offsets['eloff'] = 0.
 offsets['azoff'] = -180.
+
 
 def portList(portDirectory='/dev'):  # Finds possible ports for your OS
     linuxPortPrefix = 'tty'
@@ -142,6 +143,108 @@ def serialConnect(port, baudrate):
     ser = serial.Serial(port, baudrate)
     FlushSerialBuffers(ser)
     ResetArduinoUno(ser, timeout=15, nbytesExpected=nIDBytes)
+
+
+def cmdMap():
+    cs = StdCmd(ser, REPORT_STATE)
+    # az,el,pwr,mp,azi,eli = mrtf.RasterMap()
+    # Update the current state
+    current_state = state
+    # mrtf.PrintState()
+    RasterMap()
+    current_state = StdCmd(ser, REPORT_STATE)
+
+
+def cmdGo():
+    cs = StdCmd(ser, REPORT_STATE)
+    current_state = state
+    GoTo()
+    current_state = StdCmd(ser, REPORT_STATE)
+
+
+def cmdCurrentState():
+    PrintState()
+
+
+def cmdGoAzimuth():
+    cs = StdCmd(ser, REPORT_STATE)
+    current_state = state
+    GoAz()
+    current_state = StdCmd(ser, REPORT_STATE)
+
+
+def cmdGoElevation():
+    cs = StdCmd(ser, REPORT_STATE)
+    current_state = state
+    GoEl()
+    current_state = StdCmd(ser, REPORT_STATE)
+
+
+def cmdScan():
+    ser.write(SCAN)
+    deg = input("Enter number of degrees to turn: ")
+    print("Sending " + deg)
+    ser.write(str.encode(deg))
+    print("Reading data")
+    ndata = readStream(ser)
+    current_state = readState(ser)
+    PrintState()
+    # Convert
+    # ndata = numpyState(ndata)
+    # Save
+    np.savez(file=time.ctime().replace(' ', '_') + '.npz',
+             ndata=ndata)
+    # Plot
+    PlotData(ndata)
+
+
+def cmdEnable():
+    ser.write(ENABLE)
+    current_state = StdCmd(ser, REPORT_STATE)
+
+
+def cmdDisable():
+    ser.write(DISABLE)
+    current_state = StdCmd(ser, REPORT_STATE)
+
+
+def cmdDirection(direction):
+    if direction == 'CCW':
+        StdCmd(ser, AZIMUTH)
+        StdCmd(ser, ENABLE)
+        StdCmd(ser, FORWARD)
+    elif direction == 'CW':
+        StdCmd(ser, AZIMUTH)
+        StdCmd(ser, ENABLE)
+        StdCmd(ser, REVERSE)
+    elif direction == 'UP':
+        StdCmd(ser, ELEVATION)
+        StdCmd(ser, ENABLE)
+        StdCmd(ser, FORWARD)
+    elif direction == 'DOWN':
+        StdCmd(ser, ELEVATION)
+        StdCmd(ser, ENABLE)
+        StdCmd(ser, REVERSE)
+
+
+def cmdSetPosition():
+    PrintState()
+    newaz = float(input("New azimuth: "))
+    # print('Current azimuth', mrtstate.state['azDeg'])
+    curr_azoff = offsets['azoff']
+    # print('Current offset', curr_azoff)
+    arduino_az = state['azDeg'] + curr_azoff
+    offsets['azoff'] = arduino_az - newaz
+    # print(mrtf.azoff)
+    newel = float(input("New elevation: "))
+    curr_eloff = offsets['eloff']
+    arduino_el = state['elDeg'] + curr_eloff
+    offsets['eloff'] = arduino_el - newel
+    current_state = StdCmd(ser, REPORT_STATE)
+    PrintState()
+
+
+''' Functions '''
 
 
 def WaitForInputBytes(timeout=10, nbytesExpected=1):
@@ -188,7 +291,7 @@ def numpyState(state):
     ndata = {}
     for i in np.arange(len(state_vars)):
         ndata[state_vars[i]] = np.array(state[state_vars[i]],
-                                                 dtype=state_dtypes[i])
+                                        dtype=state_dtypes[i])
     ndata['pwr'] = zx47_60(ndata['voltage'])
     # Both readState and readStream run through here.
     # Apply offsets
@@ -637,6 +740,7 @@ def ScanSouthSky():
 def W2dBm(W):
     return 10. * np.log10(W / 1e-3)
 
+
 def zx47_60(v):
     """ Calibration curve for the Mini-Circuits ZX47-60(LN)+ power detector"""
     dBm = -50 / (1.8 - 0.6) * (v - 0.6)
@@ -1008,10 +1112,11 @@ class tabRawData(ttk.Frame):
 # a = figScan.add_subplot(111)
 style.use('ggplot')
 
-ser.write(REPORT_STATE)
-state = readState(ser)
+# *** Still need to figure out a global ser. ***
+# ser.write(REPORT_STATE)
+# state = readState(ser)
 
-PrintState()
+# PrintState()
 
 # def refreshSerialPorts():
 #     optionListSerialPort.clear()
