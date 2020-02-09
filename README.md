@@ -11,5 +11,8 @@ This GitHub contains Arduino and Python code for the telescope.
 * Stepper Motors
 * [Big Easy Driver](https://www.sparkfun.com/products/12859)
 
+## Maps
+![](https://hackaday.com/wp-content/uploads/2019/10/mrt_sats.png)
+
 As of 12/14/2016, the working Arduino sketch is: MRTv0<br/>
 The python code for the Pi is: MRTControl.py
