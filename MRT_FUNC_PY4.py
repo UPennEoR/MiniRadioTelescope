@@ -7,7 +7,7 @@ Created on Tue Jun 26 12:35:20 2018
 """
 import serial
 import numpy as np
-import healpy as hp
+#import healpy as hp
 import astropy as ap
 import matplotlib.pyplot as plt
 import time
@@ -30,8 +30,8 @@ from scipy.interpolate import griddata
 # LHS USB conection on James' Mac 2019/07/19
 #port = '/dev/cu.usbmodem14101'
 #port = '/dev/cu.usbmodem14331'
-#port = '/dev/ttyACM0'
-port = '/dev/cu.usbmodem14601'
+port = '/dev/ttyACM0'
+#port = '/dev/cu.usbmodem14601'
 baud = 115200
 nIDBytes = 18
 # Should remove this and do the initialization of the serial port in the main
@@ -470,6 +470,22 @@ def PrintMenu():
     print('Q: Quit program')
     return
 
+def ETGOHOME():
+    if(int(mrtstate.state['el_lower_limit'][0])==1):
+        print("Elevation already homed.")
+    else:
+        StdCmd(ser,ELEVATION)
+        StdCmd(ser,ENABLE)
+        StdCmd(ser,REVERSE)
+        PrintState()
+        print ('Elevation home starting')
+        while(int(mrtstate.state['el_lower_limit'][0])==0):
+            Scan(ser,1.0)
+            StdCmd(ser,REPORT_STATE)
+        print("Elevation homing done.")
+    return
+        
+    
 def ScanSouthSky():
     """Scan the entire south sky, except between 80 and 90 degrees for elevation limited by telescope design"""
     #define and convert variables for input to the scan function

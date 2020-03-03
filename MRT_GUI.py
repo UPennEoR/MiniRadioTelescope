@@ -11,13 +11,14 @@ from matplotlib.ticker import MaxNLocator
 
 import serial
 import numpy as np
-import healpy as hp
+#import healpy as hp
 import astropy as ap
 import matplotlib.pyplot as plt
 import time
 from scipy.interpolate import griddata
 
 debug = False
+
 
 '''
 Telescope Movement Commands
@@ -877,27 +878,27 @@ class tabControl(ttk.Frame):
 
         ''' Widgets '''
         # Label
-        labelCurrentAzimuth = ttk.Label(labelframeCurrentReading, text='Azimuth: 0.0°')
-        labelCurrentElevation = ttk.Label(labelframeCurrentReading, text='Elevation: 0.0°')
-        labelCurrentPower = ttk.Label(labelframeCurrentReading, text='Power: 0.0 μW')
+        labelCurrentAzimuth = ttk.Label(labelframeCurrentReading, text='Azimuth: 0.0 deg')
+        labelCurrentElevation = ttk.Label(labelframeCurrentReading, text='Elevation: 0.0 deg')
+        labelCurrentPower = ttk.Label(labelframeCurrentReading, text='Power: 0.0 muW')
 
         # Button
-        buttonElevationUp = ttk.Button(labelframeQuickMove, text='↑')
+        buttonElevationUp = ttk.Button(labelframeQuickMove, text='up')
         buttonElevationUp.grid(row=0, column=1)
-        buttonElevationDown = ttk.Button(labelframeQuickMove, text='↓')
+        buttonElevationDown = ttk.Button(labelframeQuickMove, text='down')
         buttonElevationDown.grid(row=2, column=1)
-        buttonAzimuthCCW = ttk.Button(labelframeQuickMove, text='←')
+        buttonAzimuthCCW = ttk.Button(labelframeQuickMove, text='left')
         buttonAzimuthCCW.grid(row=1, column=0)
-        buttonAzimuthCW = ttk.Button(labelframeQuickMove, text='→')
+        buttonAzimuthCW = ttk.Button(labelframeQuickMove, text='right')
         buttonAzimuthCW.grid(row=1, column=2)
-        buttonHome = ttk.Button(labelframeQuickMove, text='⌂')
+        buttonHome = ttk.Button(labelframeQuickMove, text='not sure')
         buttonHome.grid(row=1, column=1)
 
         # Radiobutton
-        radiobutton1 = ttk.Radiobutton(labelframeDegreesIncrement, text='1°', variable=varDegreeIncrement, value=1)
-        radiobutton5 = ttk.Radiobutton(labelframeDegreesIncrement, text='5°', variable=varDegreeIncrement, value=5)
-        radiobutton10 = ttk.Radiobutton(labelframeDegreesIncrement, text='10°', variable=varDegreeIncrement, value=10)
-        radiobutton20 = ttk.Radiobutton(labelframeDegreesIncrement, text='20°', variable=varDegreeIncrement, value=20)
+        radiobutton1 = ttk.Radiobutton(labelframeDegreesIncrement, text='1 deg', variable=varDegreeIncrement, value=1)
+        radiobutton5 = ttk.Radiobutton(labelframeDegreesIncrement, text='5 deg', variable=varDegreeIncrement, value=5)
+        radiobutton10 = ttk.Radiobutton(labelframeDegreesIncrement, text='10 deg', variable=varDegreeIncrement, value=10)
+        radiobutton20 = ttk.Radiobutton(labelframeDegreesIncrement, text='20 deg', variable=varDegreeIncrement, value=20)
 
         ''' Grid Layout '''
         # Labelframe
@@ -984,8 +985,8 @@ class tabScan(ttk.Frame):
         plotScan.plot(x, y, '.-')
 
         plotScan.set_title('Yeet!')
-        plotScan.set_xlabel('Azimuth (°)')
-        plotScan.set_ylabel('Power (μW)')
+        plotScan.set_xlabel('Azimuth (deg)')
+        plotScan.set_ylabel(r'Power ($\mu$W)')
 
         canvasScan = FigureCanvasTkAgg(figureScan, self)
         canvasScan.draw()
@@ -1068,11 +1069,11 @@ class tabMap(ttk.Frame):
 
         plotMap.set_title('Yoink!')
 
-        plotMap.set_xlabel('Azimuth (°)')
-        plotMap.set_ylabel('Elevation (°)')
+        plotMap.set_xlabel(r'Azimuth ($^\circ$)')
+        plotMap.set_ylabel(r'Elevation ($^\circ$)')
 
         cb.minorticks_on()
-        cb.set_label('Power (μW)')
+        cb.set_label(r'Power ($\mu$W)')
 
         # Tkinter Matplotlib Graphing Code
         canvasMap = FigureCanvasTkAgg(figureMap, self)

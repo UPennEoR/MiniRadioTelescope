@@ -1,11 +1,11 @@
 # verified 12 July 2018: working
 
 import numpy as np
-import healpy as hp
+#import healpy as hp
 import astropy as ap
 import time
 import mrtstate
-import MRT_FUNC_PY3 as mrtf
+import MRT_FUNC_PY4 as mrtf
 
 #%
 # ----------------------------------------------------------------------------
@@ -116,7 +116,7 @@ while(operate):
             # Convert
             #ndata = numpyState(ndata)
             # Save
-            np.savez(file=time.ctime().replace(' ','_')+'.npz',
+            np.savez(file=dir+time.ctime().replace(' ','_')+'.npz',
                      ndata=ndata)
             # Plot
             mrtf.PlotData(ndata)
@@ -128,6 +128,16 @@ while(operate):
             print ("Sending "+var)
             ser.write(mrtf.DISABLE)
             current_state =  mrtf.StdCmd(ser,mrtf.REPORT_STATE)
+        elif (var == 'ETGOHOME'):
+            print ("Sending "+var)
+            mrtf.ETGOHOME()
+            mrtf.PrintState()
+            newel = float(0.0)
+            curr_eloff = mrtstate.offsets['eloff']
+            arduino_el = mrtstate.state['elDeg'] + curr_eloff
+            mrtstate.offsets['eloff'] = arduino_el - newel
+            current_state =  mrtf.StdCmd(ser,mrtf.REPORT_STATE)
+            mrtf.PrintState()
         elif (var == 'X'):
             Ndatapts = input("Enter number of data points: ")
             ser.write(mrtf.REPORT_STATE)
@@ -189,7 +199,7 @@ while(operate):
             # Convert
             #ndata = numpyState(ndata)
             # Save
-            np.savez(file=time.ctime().replace(' ','_')+'.npz',
+            np.savez(file=dir+time.ctime().replace(' ','_')+'.npz',
                      ndata=ndata)
             # Plot
             mrtf.PlotData(ndata)
