@@ -134,6 +134,7 @@ def portList(portDirectory='/dev'):  # Finds possible ports for your OS
     # Debug
     if debug:
         print('DEBUG: The following are possible Arduino ports: ')
+        
         print('DEBUG: ' + str(ports))
 
     return ports
@@ -985,7 +986,7 @@ class tabScan(ttk.Frame):
         plotScan.plot(x, y, '.-')
 
         plotScan.set_title('Yeet!')
-        plotScan.set_xlabel('Azimuth (deg)')
+        plotScan.set_xlabel(r'Azimuth ($^\circ$)')
         plotScan.set_ylabel(r'Power ($\mu$W)')
 
         canvasScan = FigureCanvasTkAgg(figureScan, self)
@@ -994,8 +995,9 @@ class tabScan(ttk.Frame):
 
         toolbarScan = NavigationToolbar2Tk(canvasScan, self)
         toolbarScan.update()
-        canvasScan.tkcanvas.pack(side=tk.TOP, fill=tk.BOTH, expand=True, anchor=tk.S)
-
+        # Replacing .tkcanvas with .get_tk_widget seems to "just work" (TM) - JA 2020/04/04
+        #canvasScan.tkcanvas.pack(side=tk.TOP, fill=tk.BOTH, expand=True, anchor=tk.S)
+        canvasScan.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=True, anchor=tk.S)
 
 class tabMap(ttk.Frame):
     def __init__(self, parent):
@@ -1082,8 +1084,8 @@ class tabMap(ttk.Frame):
 
         toolbarMap = NavigationToolbar2Tk(canvasMap, self)
         toolbarMap.update()
-        canvasMap.tkcanvas.pack(side=tk.TOP, fill=tk.BOTH, expand=True, anchor=tk.S)
-
+        #canvasMap.tkcanvas.pack(side=tk.TOP, fill=tk.BOTH, expand=True, anchor=tk.S)
+        canvasMap.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=True, anchor=tk.S)
 
 class tabTerminal(ttk.Frame):
     def __init__(self, parent):
