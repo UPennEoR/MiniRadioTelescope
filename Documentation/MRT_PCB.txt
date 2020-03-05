@@ -1,0 +1,12 @@
+MRT PCB components
+
+Power subsystems:
+•	5 V power for RF electronics
+•	9 V power for Arduino
+•	15 V power for LNB
+•	12 V power for motor controllers
+
+Arduino:
+•	DIO to shift register to motor controller
+•	Low pass filter to ADC
+•	
