@@ -27,5 +27,5 @@ This GitHub contains Arduino and Python code for the telescope.
 ![](https://github.com/UPennEoR/MiniRadioTelescope/blob/master/Documentation/MakerFaireMap.png)
 ![](https://github.com/UPennEoR/MiniRadioTelescope/blob/master/Documentation/SDRScan.jpg)
 
-As of 12/14/2016, the working Arduino sketch is: MRTv0<br/>
-The python code for the Pi is: MRTControl.py
+As of 5 April 2020, the working Arduino sketch is: MRTArduino (previously known as MRTv2)<br/>
+The python code for the Pi is MRT_PY4.py
