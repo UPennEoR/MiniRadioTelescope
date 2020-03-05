@@ -4,3 +4,5 @@
 *.pyc
 Data/
 MakerFaireData/
+*/.ipynb_checkpoints
+*/.ipynb_checkpoints/*
