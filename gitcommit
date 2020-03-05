@@ -1,0 +1,6 @@
+#!/bin/bash
+python CheckForLargeFiles.py
+git add *
+DATE=`date`
+git commit -m "$DATE"
+git push
