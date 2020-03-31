@@ -25,11 +25,15 @@ Telescope Movement Commands
 (Adapted from RepRap G-Code)
 [] = Optional Parameters
 G0 A### E### - Rapid Movement (Manual Control)
-G1 A### E### F### S### - Programmed Movement (Scan/Map)
+G1 A### E### F### S### - Programmed Movement (Scan/Map) (S is endstops)
+F### - Feedrate
+S### - Endstops
 G28 [A E] (Select Axis to Home) - Home
+G30 - Start Position
 G90 - Use Absolute Angles
 G91 - Use Relative Angles
 G92 A### E### - Set Current Position
+M17 - Enable Motors
 M18 - Disable Motors
 M84 S### - Disable after S seconds of inactivity
 M105 - Report Current Readings
