@@ -1,0 +1,532 @@
+import os
+import sys
+import tkinter as tk
+from tkinter import ttk, scrolledtext
+
+from matplotlib import pyplot as plt
+from matplotlib import style
+from matplotlib.backends._backend_tk import NavigationToolbar2Tk
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+from matplotlib.ticker import MaxNLocator
+
+import serial
+import numpy as np
+# import healpy as hp
+import astropy as ap
+import matplotlib.pyplot as plt
+import time
+from GUI import MRT_FUNC_PY4_GUI as mrtf
+from scipy.interpolate import griddata
+
+debug = False
+
+'''
+Telescope Movement Commands
+(Adapted from RepRap G-Code)
+[] = Optional Parameters
+G0 A### E### - Rapid Movement (Manual Control)
+G1 A### E### F### S### - Programmed Movement (Scan/Map) (S is endstops)
+F### - Feedrate
+S### - Endstops
+G28 [A E] (Select Axis to Home) - Home
+G30 - Start Position
+G90 - Use Absolute Angles
+G91 - Use Relative Angles
+G92 A### E### - Set Current Position
+M17 - Enable Motors
+M18 - Disable Motors
+M84 S### - Disable after S seconds of inactivity
+M105 - Report Current Readings
+M114 - Report Current Position
+M350 Ann Enn - Microstepping Mode (Full - 1/16) nn:(1, 2, 4, 8, 16)
+N#### - Line Number of G-Code Sent
+'''
+
+
+def portList(portDirectory='/dev'):  # Finds possible ports for your OS
+    linuxPortPrefix = 'tty'
+    macOSPortPrefix = 'cu.usbmodem'
+    ports = []
+
+    # Functions
+    def portSearch(portPrefix):
+        for file in os.listdir(portDirectory):
+            if file.startswith(portPrefix):
+                ports.append(os.path.join(portDirectory, file))
+
+    # Logic
+    if sys.platform.startswith('linux'):
+        portSearch(linuxPortPrefix)
+    elif sys.platform.startswith('darwin'):
+        portSearch(macOSPortPrefix)
+
+    # Debug
+    if debug:
+        print('DEBUG: The following are possible Arduino ports: ')
+
+        print('DEBUG: ' + str(ports))
+
+    return ports
+
+
+def cmdMap(azimuth, elevation, height, width):
+    # mrtf.RasterMap(azimuth, elevation, height, width)
+    print(azimuth + elevation + height + width)
+
+
+def cmdGo():
+    return
+
+
+def cmdCurrentState():
+    mrtf.PrintState()
+
+
+def cmdGoAzimuth():
+    return
+
+
+def cmdGoElevation():
+    return
+
+
+def cmdScan():
+    return
+
+
+def cmdEnable():
+    mrtf.ser.write(mrtf.ENABLE)
+    mrtf.current_state = mrtf.StdCmd(mrtf.ser, mrtf.REPORT_STATE)
+
+
+def cmdDisable():
+    mrtf.ser.write(mrtf.DISABLE)
+    current_state = mrtf.StdCmd(mrtf.ser, mrtf.REPORT_STATE)
+
+
+def cmdDirection(direction):
+    if direction == 'CCW':
+        mrtf.StdCmd(mrtf.ser, mrtf.AZIMUTH)
+        mrtf.StdCmd(mrtf.ser, mrtf.ENABLE)
+        mrtf.StdCmd(mrtf.ser, mrtf.FORWARD)
+    elif direction == 'CW':
+        mrtf.StdCmd(mrtf.ser, mrtf.AZIMUTH)
+        mrtf.StdCmd(mrtf.ser, mrtf.ENABLE)
+        mrtf.StdCmd(mrtf.ser, mrtf.REVERSE)
+    elif direction == 'UP':
+        mrtf.StdCmd(mrtf.ser, mrtf.ELEVATION)
+        mrtf.StdCmd(mrtf.ser, mrtf.ENABLE)
+        mrtf.StdCmd(mrtf.ser, mrtf.FORWARD)
+    elif direction == 'DOWN':
+        mrtf.StdCmd(mrtf.ser, mrtf.ELEVATION)
+        mrtf.StdCmd(mrtf.ser, mrtf.ENABLE)
+        mrtf.StdCmd(mrtf.ser, mrtf.REVERSE)
+
+
+def cmdSetPosition():
+    # mrtf.PrintState()
+    # newaz = float(input("New azimuth: "))
+    # # print('Current azimuth', mrtstate.state['azDeg'])
+    # curr_azoff = offsets['azoff']
+    # # print('Current offset', curr_azoff)
+    # arduino_az = state['azDeg'] + curr_azoff
+    # offsets['azoff'] = arduino_az - newaz
+    # # print(mrtf.azoff)
+    # newel = float(input("New elevation: "))
+    # curr_eloff = offsets['eloff']
+    # arduino_el = state['elDeg'] + curr_eloff
+    # offsets['eloff'] = arduino_el - newel
+    # current_state = StdCmd(ser, REPORT_STATE)
+    mrtf.PrintState()
+
+
+class mrtGUI(tk.Tk):
+
+    def __init__(self, *args, **kwargs):
+        tk.Tk.__init__(self, *args, **kwargs)
+
+        # self.geometry('1280x800')
+        self.title('Mini Radio Telescope')
+
+        mainTabList = (tabControl, tabScan, tabMap, tabTerminal, tabViewer)
+        mainTabNames = ['Control', 'Scan', 'Map', 'Terminal', 'Viewer']
+        infoTabList = (tabConnection, tabState)
+        infoTabNames = ['Connection', 'State']
+        filesTabList = (tabGraph, tabRawData)
+        filesTabNames = ['Graphs', 'Raw Data']
+
+        notebookMain = ttk.Notebook(self)
+        notebookMain.pack(expand=1, fill='both', side='right')
+        notebookInfo = ttk.Notebook(self, width=300, height=250)
+        notebookInfo.pack(side='top', anchor='w', fill='both')
+        notebookFiles = ttk.Notebook(self, width=300, height=300)
+        notebookFiles.pack(side='top', anchor='w', fill='y', expand=1)
+
+        for t in mainTabList:
+            tab = t(notebookMain)
+            notebookMain.add(tab, text=mainTabNames[mainTabList.index(t)])
+
+        for t in infoTabList:
+            tab = t(notebookInfo)
+            notebookInfo.add(tab, text=infoTabNames[infoTabList.index(t)])
+
+        for t in filesTabList:
+            tab = t(notebookFiles)
+            notebookFiles.add(tab, text=filesTabNames[filesTabList.index(t)])
+
+
+class tabConnection(ttk.Frame):
+    def __init__(self, parent):
+        ttk.Frame.__init__(self, parent)
+
+        varSerialPort = tk.StringVar()
+        varBaudrate = tk.StringVar()
+
+        optionListSerialPort = ['AUTO']
+        optionListBaudrate = [9600, 14400, 19200, 28800, 38400, 56000, 57600, 115200]
+
+        frameConnection = ttk.Frame(self)
+        frameConnection.grid(column=0, row=0, sticky='nsew')
+
+        buttonRefresh = ttk.Button(frameConnection, text='Refresh')
+        # buttonRefresh.pack(side='right', anchor='n')
+        buttonRefresh.grid(row=0, column=1)
+        labelSerialPort = ttk.Label(frameConnection, text='Serial Port')
+        # labelSerialPort.pack(side='left', anchor='n', fill='x')
+        labelSerialPort.grid(row=0, column=0, sticky='nsew')
+        optionMenuSerialPort = ttk.OptionMenu(frameConnection, varSerialPort, optionListSerialPort[0],
+                                              *optionListSerialPort)
+        # optionMenuSerialPort.pack(fill='x', anchor='w')
+        optionMenuSerialPort.grid(row=1, column=0, columnspan=2, sticky='nsew')
+        labelBaudrate = ttk.Label(frameConnection, text='Baudrate')
+        labelBaudrate.grid(row=3, column=0, sticky='nsew')
+        optionBaudrate = ttk.OptionMenu(frameConnection, varBaudrate, optionListBaudrate[0], *optionListBaudrate)
+        optionBaudrate.grid(row=4, column=0, columnspan=2, sticky='nsew')
+        buttonConnect = ttk.Button(frameConnection, text='Connect')
+        buttonConnect.grid(row=5, column=0, columnspan=2, sticky='nsew')
+
+
+class tabState(ttk.Frame):
+    def __init__(self, parent):
+        ttk.Frame.__init__(self, parent)
+
+        frameState = ttk.Frame(self)
+        frameState.pack(fill='both', expand=True)
+
+        ''' Widgets '''
+        # Label
+        labelState = ttk.Label(frameState, text='State: Offline')
+        labelEstimatedTotalTime = ttk.Label(frameState, text='Estimated Total Time: 0:00')
+        labelElapsedTime = ttk.Label(frameState, text='Elapsed Time: 0:00')
+        labelTimeLeft = ttk.Label(frameState, text='Time Left: 0:00')
+        labelProgress = ttk.Label(frameState, text='Progress: 0%')
+
+        # Separator
+        separatorUpper = ttk.Separator(frameState, orient='horizontal')
+        separatorLower = ttk.Separator(frameState, orient='horizontal')
+
+        # Progress Bar
+        progressbar = ttk.Progressbar(frameState)
+
+        # Button
+        buttonStart = ttk.Button(frameState, text='Start')
+        buttonPause = ttk.Button(frameState, text='Pause')
+        buttonCancel = ttk.Button(frameState, text='Cancel')
+
+        ''' Grid Layout '''
+        # Label
+        labelState.grid(row=0, column=0, padx=10, pady=10, sticky='we', columnspan=3)
+        labelEstimatedTotalTime.grid(row=2, column=0, padx=10, pady=10, sticky='we', columnspan=3)
+        labelElapsedTime.grid(row=4, column=0, padx=10, pady=10, sticky='we', columnspan=3)
+        labelTimeLeft.grid(row=5, column=0, padx=10, pady=10, sticky='we', columnspan=3)
+        labelProgress.grid(row=6, column=0, padx=10, pady=10, sticky='we', columnspan=3)
+
+        # Separator
+        separatorUpper.grid(row=1, column=0, sticky='we', columnspan=3)
+        separatorLower.grid(row=3, column=0, sticky='we', columnspan=3)
+
+        # Progress Bar
+        progressbar.grid(row=7, column=0, sticky='we', padx=10, columnspan=3)
+
+        # Button
+        buttonStart.grid(row=8, column=0)
+        buttonPause.grid(row=8, column=1)
+        buttonCancel.grid(row=8, column=2)
+
+
+class tabControl(ttk.Frame):
+    def __init__(self, parent):
+        ttk.Frame.__init__(self, parent)
+
+        frameControl = ttk.Frame(self)
+        frameControl.grid(row=0, column=0, sticky='nsew')
+
+        labelframeCurrentReading = ttk.Labelframe(frameControl, text='Current Reading')
+        labelframeQuickMove = ttk.Labelframe(frameControl, text='Quick Move')
+        labelframeDegreesIncrement = ttk.Labelframe(labelframeQuickMove, text='Increment')
+
+        varDegreeIncrement = tk.IntVar(self)
+
+        ''' Widgets '''
+        # Label
+        labelCurrentAzimuth = ttk.Label(labelframeCurrentReading, text='Azimuth: 0.0 deg')
+        labelCurrentElevation = ttk.Label(labelframeCurrentReading, text='Elevation: 0.0 deg')
+        labelCurrentPower = ttk.Label(labelframeCurrentReading, text='Power: 0.0 muW')
+
+        # Button
+        buttonElevationUp = ttk.Button(labelframeQuickMove, text='up')
+        buttonElevationUp.grid(row=0, column=1)
+        buttonElevationDown = ttk.Button(labelframeQuickMove, text='down')
+        buttonElevationDown.grid(row=2, column=1)
+        buttonAzimuthCCW = ttk.Button(labelframeQuickMove, text='left')
+        buttonAzimuthCCW.grid(row=1, column=0)
+        buttonAzimuthCW = ttk.Button(labelframeQuickMove, text='right')
+        buttonAzimuthCW.grid(row=1, column=2)
+        buttonHome = ttk.Button(labelframeQuickMove, text='not sure')
+        buttonHome.grid(row=1, column=1)
+
+        # Radiobutton
+        radiobutton1 = ttk.Radiobutton(labelframeDegreesIncrement, text='1 deg', variable=varDegreeIncrement, value=1)
+        radiobutton5 = ttk.Radiobutton(labelframeDegreesIncrement, text='5 deg', variable=varDegreeIncrement, value=5)
+        radiobutton10 = ttk.Radiobutton(labelframeDegreesIncrement, text='10 deg', variable=varDegreeIncrement,
+                                        value=10)
+        radiobutton20 = ttk.Radiobutton(labelframeDegreesIncrement, text='20 deg', variable=varDegreeIncrement,
+                                        value=20)
+
+        ''' Grid Layout '''
+        # Labelframe
+        labelframeCurrentReading.grid(row=0, column=0)
+        labelframeQuickMove.grid(row=0, column=1)
+        labelframeDegreesIncrement.grid(row=3, column=0, columnspan=3)
+
+        # Label
+        labelCurrentAzimuth.grid(row=0, column=0, sticky='we')
+        labelCurrentElevation.grid(row=1, column=0, sticky='we')
+        labelCurrentPower.grid(row=2, column=0, sticky='we')
+
+        # Radiobutton
+        radiobutton1.grid(row=0, column=0)
+        radiobutton5.grid(row=0, column=1)
+        radiobutton10.grid(row=0, column=2)
+        radiobutton20.grid(row=0, column=3)
+
+
+class tabScan(ttk.Frame):
+    def __init__(self, parent):
+        ttk.Frame.__init__(self, parent)
+
+        frameScanControl = ttk.Frame(self)
+        frameScanControl.pack(side='bottom')
+
+        optionListScanDirection = ['Up', 'Down', 'Clockwise', 'Counterclockwise']
+
+        ''' Variables '''
+        varScanStartAzimuth = tk.StringVar()
+        varScanStartElevation = tk.StringVar()
+        varScanDirection = tk.StringVar()
+        varScanAmount = tk.StringVar()
+
+        ''' Widgets '''
+        # Label
+        labelScanStartAzimuth = ttk.Label(frameScanControl, text='Start Azimuth:')
+        labelScanStartElevation = ttk.Label(frameScanControl, text='Start Elevation:')
+        labelScanDirection = ttk.Label(frameScanControl, text='Direction:')
+        labelScanAmount = ttk.Label(frameScanControl, text='Amount:')
+
+        # Entry
+        entryScanStartAzimuth = ttk.Entry(frameScanControl, textvariable=varScanStartAzimuth)
+        entryScanStartElevation = ttk.Entry(frameScanControl, textvariable=varScanStartElevation)
+        entryScanAmount = ttk.Entry(frameScanControl, textvariable=varScanAmount)
+
+        # OptionMenu
+        optionMenuScanDirection = ttk.OptionMenu(frameScanControl, varScanDirection, optionListScanDirection[0],
+                                                 *optionListScanDirection)
+
+        # Button
+        buttonScan = ttk.Button(frameScanControl, text='Scan')
+
+        # Other
+        # progressBar = ttk.Progressbar(frameScanControl, orient='horizontal', length=100, mode='determinate').grid(
+        # row=2, column=0, columnspan=5, sticky='nsew') sep = ttk.Separator(frameConnection, orient='horizontal')
+        # sep.grid(row=2, column=0, columnspan=2, sticky='we')
+
+        ''' Grid Layout '''
+        # Label
+        labelScanStartAzimuth.grid(row=0, column=0, sticky='nsew')
+        labelScanStartElevation.grid(row=1, column=0, sticky='nsew')
+        labelScanDirection.grid(row=0, column=2, sticky='nsew')
+        labelScanAmount.grid(row=1, column=2, sticky='nsew')
+
+        # Entry
+        entryScanStartAzimuth.grid(row=0, column=1)
+        entryScanStartElevation.grid(row=1, column=1)
+        entryScanAmount.grid(row=1, column=3)
+
+        # OptionMenu
+        optionMenuScanDirection.grid(row=0, column=3, sticky='nsew')
+
+        # Button
+        buttonScan.grid(row=0, column=4, rowspan=2)
+
+        ''' Graph '''
+        x = np.arange(0.0, 2.0, 0.01)
+        y = 1 + np.sin(2 * np.pi * x)
+
+        figureScan = plt.figure()
+
+        plotScan = figureScan.add_subplot(111)
+        plotScan.plot(x, y, '.-')
+
+        plotScan.set_title('Yeet!')
+        plotScan.set_xlabel(r'Azimuth ($^\circ$)')
+        plotScan.set_ylabel(r'Power ($\mu$W)')
+
+        canvasScan = FigureCanvasTkAgg(figureScan, self)
+        canvasScan.draw()
+        canvasScan.get_tk_widget().pack(side=tk.BOTTOM, fill=tk.BOTH, expand=True, anchor=tk.S)
+
+        toolbarScan = NavigationToolbar2Tk(canvasScan, self)
+        toolbarScan.update()
+        # Replacing .tkcanvas with .get_tk_widget seems to "just work" (TM) - JA 2020/04/04
+        # canvasScan.tkcanvas.pack(side=tk.TOP, fill=tk.BOTH, expand=True, anchor=tk.S)
+        canvasScan.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=True, anchor=tk.S)
+
+
+class tabMap(ttk.Frame):
+    def __init__(self, parent):
+        ttk.Frame.__init__(self, parent)
+
+        frameMapControl = ttk.Frame(self)
+        frameMapControl.pack(side='bottom')
+
+        ''' Variables '''
+        varMapCenterAzimuth = tk.StringVar()
+        varMapCenterElevation = tk.StringVar()
+        varMapHeight = tk.StringVar()
+        varMapWidth = tk.StringVar()
+
+        ''' Label '''
+        labelMapCenterAzimuth = ttk.Label(frameMapControl, text='Center Azimuth:')
+        labelMapCenterElevation = ttk.Label(frameMapControl, text='Center Elevation:')
+        labelMapHeight = ttk.Label(frameMapControl, text='Height:')
+        labelMapWidth = ttk.Label(frameMapControl, text='Width:')
+
+        ''' Entry '''
+        entryMapStartAzimuth = ttk.Entry(frameMapControl, textvariable=varMapCenterAzimuth)
+        entryMapStartElevation = ttk.Entry(frameMapControl, textvariable=varMapCenterElevation)
+        entryMapHeight = ttk.Entry(frameMapControl, textvariable=varMapHeight)
+        entryMapWidth = ttk.Entry(frameMapControl, textvariable=varMapWidth)
+
+        ''' Button '''
+        buttonMap = ttk.Button(frameMapControl, text='Map', command=lambda: cmdMap(entryMapStartAzimuth.get(), entryMapStartElevation.get(), entryMapHeight.get(), entryMapWidth.get()))
+
+        ''' Other '''
+        # progressBar = ttk.Progressbar(frameScanControl, orient='horizontal', length=100, mode='determinate').grid(row=2, column=0, columnspan=5, sticky='nsew')
+        # sep = ttk.Separator(frameConnection, orient='horizontal')
+        # sep.grid(row=2, column=0, columnspan=2, sticky='we')
+
+        ''' Grid Layout '''
+        # Label
+        labelMapCenterAzimuth.grid(row=0, column=0, sticky='nsew')
+        labelMapCenterElevation.grid(row=1, column=0, sticky='nsew')
+        labelMapHeight.grid(row=0, column=2, sticky='nsew')
+        labelMapWidth.grid(row=1, column=2, sticky='nsew')
+
+        # Entry
+        entryMapStartAzimuth.grid(row=0, column=1)
+        entryMapStartElevation.grid(row=1, column=1)
+        entryMapHeight.grid(row=0, column=3)
+        entryMapWidth.grid(row=1, column=3)
+
+        # Button
+        buttonMap.grid(row=0, column=4, rowspan=2)
+
+        ''' Graph '''
+        # make these smaller to increase the resolution
+        dx, dy = 0.05, 0.05
+
+        # generate 2 2d grids for the x & y bounds
+        y, x = np.mgrid[slice(1, 5 + dy, dy), slice(1, 5 + dx, dx)]
+
+        z = np.sin(x) ** 10 + np.cos(10 + y * x) * np.cos(x)
+
+        z = z[:-1, :-1]
+
+        # Colorbar Scaling
+        levels = MaxNLocator(nbins=15).tick_values(z.min(), z.max())
+
+        figureMap = plt.figure(2)
+        plotMap = figureMap.add_subplot(111)
+
+        cf = plotMap.contourf(x[:-1, :-1] + dx / 2., y[:-1, :-1] + dy / 2., z, levels=levels, cmap=plt.cm.jet)
+
+        cb = figureMap.colorbar(cf, ax=plotMap)
+
+        plotMap.set_title('Yoink!')
+
+        plotMap.set_xlabel(r'Azimuth ($^\circ$)')
+        plotMap.set_ylabel(r'Elevation ($^\circ$)')
+
+        cb.minorticks_on()
+        cb.set_label(r'Power ($\mu$W)')
+
+        # Tkinter Matplotlib Graphing Code
+        canvasMap = FigureCanvasTkAgg(figureMap, self)
+        canvasMap.draw()
+        canvasMap.get_tk_widget().pack(side=tk.BOTTOM, fill=tk.BOTH, expand=True, anchor=tk.S)
+
+        toolbarMap = NavigationToolbar2Tk(canvasMap, self)
+        toolbarMap.update()
+        # canvasMap.tkcanvas.pack(side=tk.TOP, fill=tk.BOTH, expand=True, anchor=tk.S)
+        canvasMap.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=True, anchor=tk.S)
+
+
+class tabTerminal(ttk.Frame):
+    def __init__(self, parent):
+        ttk.Frame.__init__(self, parent)
+
+        scrolledText = scrolledtext.ScrolledText(self).pack()
+
+
+class tabViewer(ttk.Frame):
+    def __init__(self, parent):
+        ttk.Frame.__init__(self, parent)
+
+
+class tabGraph(ttk.Frame):
+    def __init__(self, parent):
+        ttk.Frame.__init__(self, parent)
+
+
+class tabRawData(ttk.Frame):
+    def __init__(self, parent):
+        ttk.Frame.__init__(self, parent)
+
+
+# # Figure # #
+# figsize=(5, 4), dpi=100
+
+# a = figScan.add_subplot(111)
+style.use('ggplot')
+
+# *** Still need to figure out a global ser. ***
+# ser.write(REPORT_STATE)
+# state = readState(ser)
+
+# PrintState()
+
+# def refreshSerialPorts():
+#     optionListSerialPort.clear()
+#     optionMenuSerialPort['menu'].delete(0, 'end')
+#     optionMenuSerialPort['menu'].add_command(label='AUTO')
+#     for i in portList():
+#         optionMenuSerialPort['menu'].add_command(label=i)
+
+# # Grid # #
+# tab_info.grid_rowconfigure(0, weight=1)
+# tab_info.grid_columnconfigure(0, weight=1)
+
+# for i in portList():
+#     optionListSerialPort.append(i)
+
+mrtGUI().mainloop()
