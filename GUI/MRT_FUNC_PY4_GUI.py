@@ -199,6 +199,23 @@ def read_ser_buffer_to_eot(ser):
         buf = ser.readline()
     return output
 
+def Direction(direction):
+    if direction == 'Counterclockwise':
+        StdCmd(ser, AZIMUTH)
+        StdCmd(ser, ENABLE)
+        StdCmd(ser, FORWARD)
+    elif direction == 'Clockwise':
+        StdCmd(ser, AZIMUTH)
+        StdCmd(ser, ENABLE)
+        StdCmd(ser, REVERSE)
+    elif direction == 'Up':
+        StdCmd(ser, ELEVATION)
+        StdCmd(ser, ENABLE)
+        StdCmd(ser, FORWARD)
+    elif direction == 'Down':
+        StdCmd(ser, ELEVATION)
+        StdCmd(ser, ENABLE)
+        StdCmd(ser, REVERSE)
 
 def Scan(ser, deg):
     """Scan a specified number of degrees on the current axis in the current direction"""
@@ -210,8 +227,7 @@ def Scan(ser, deg):
     deg_str = str.encode(str(np.round(deg, 3)))
     ser.write(deg_str)
     data = readStream(ser)
-    # StdCmd(ser,REPORT_STATE)
-    return data
+    PlotData(data)
 
 
 def PlotData(ndata):

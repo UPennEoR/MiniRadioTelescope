@@ -90,8 +90,11 @@ def cmdGoElevation():
     return
 
 
-def cmdScan():
-    return
+def cmdScan(az, el, direction, amount, message):
+    mrtf.GoTo(az, el)
+    mrtf.Direction(direction)
+    mrtf.Scan(amount)
+
 
 
 def cmdEnable():
@@ -102,25 +105,6 @@ def cmdEnable():
 def cmdDisable():
     mrtf.ser.write(mrtf.DISABLE)
     current_state = mrtf.StdCmd(mrtf.ser, mrtf.REPORT_STATE)
-
-
-def cmdDirection(direction):
-    if direction == 'CCW':
-        mrtf.StdCmd(mrtf.ser, mrtf.AZIMUTH)
-        mrtf.StdCmd(mrtf.ser, mrtf.ENABLE)
-        mrtf.StdCmd(mrtf.ser, mrtf.FORWARD)
-    elif direction == 'CW':
-        mrtf.StdCmd(mrtf.ser, mrtf.AZIMUTH)
-        mrtf.StdCmd(mrtf.ser, mrtf.ENABLE)
-        mrtf.StdCmd(mrtf.ser, mrtf.REVERSE)
-    elif direction == 'UP':
-        mrtf.StdCmd(mrtf.ser, mrtf.ELEVATION)
-        mrtf.StdCmd(mrtf.ser, mrtf.ENABLE)
-        mrtf.StdCmd(mrtf.ser, mrtf.FORWARD)
-    elif direction == 'DOWN':
-        mrtf.StdCmd(mrtf.ser, mrtf.ELEVATION)
-        mrtf.StdCmd(mrtf.ser, mrtf.ENABLE)
-        mrtf.StdCmd(mrtf.ser, mrtf.REVERSE)
 
 
 def cmdSetPosition():
@@ -332,6 +316,7 @@ class tabScan(ttk.Frame):
         labelScanStartElevation = ttk.Label(frameScanControl, text='Start Elevation:')
         labelScanDirection = ttk.Label(frameScanControl, text='Direction:')
         labelScanAmount = ttk.Label(frameScanControl, text='Amount:')
+        labelScanMessage = ttk.Label(frameScanControl, text='Ready to Scan')
 
         # Entry
         entryScanStartAzimuth = ttk.Entry(frameScanControl, textvariable=varScanStartAzimuth)
@@ -343,7 +328,7 @@ class tabScan(ttk.Frame):
                                                  *optionListScanDirection)
 
         # Button
-        buttonScan = ttk.Button(frameScanControl, text='Scan')
+        buttonScan = ttk.Button(frameScanControl, text='Scan', command=lambda: cmdScan(varScanStartAzimuth.get(), varScanStartElevation.get(), varScanDirection.get(), varScanAmount.get()))
 
         # Other
         # progressBar = ttk.Progressbar(frameScanControl, orient='horizontal', length=100, mode='determinate').grid(
@@ -356,6 +341,7 @@ class tabScan(ttk.Frame):
         labelScanStartElevation.grid(row=1, column=0, sticky='nsew')
         labelScanDirection.grid(row=0, column=2, sticky='nsew')
         labelScanAmount.grid(row=1, column=2, sticky='nsew')
+        labelScanMessage.grid(row=2, column=0, columnspan=5)
 
         # Entry
         entryScanStartAzimuth.grid(row=0, column=1)
@@ -410,6 +396,7 @@ class tabMap(ttk.Frame):
         labelMapCenterElevation = ttk.Label(frameMapControl, text='Center Elevation:')
         labelMapHeight = ttk.Label(frameMapControl, text='Height:')
         labelMapWidth = ttk.Label(frameMapControl, text='Width:')
+        labelMapMessage = ttk.Label(frameMapControl, text='Ready to Map')
 
         ''' Entry '''
         entryMapStartAzimuth = ttk.Entry(frameMapControl, textvariable=varMapCenterAzimuth)
@@ -431,6 +418,7 @@ class tabMap(ttk.Frame):
         labelMapCenterElevation.grid(row=1, column=0, sticky='nsew')
         labelMapHeight.grid(row=0, column=2, sticky='nsew')
         labelMapWidth.grid(row=1, column=2, sticky='nsew')
+        labelMapMessage.grid(row=2, column=0, columnspan=5)
 
         # Entry
         entryMapStartAzimuth.grid(row=0, column=1)
