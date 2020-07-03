@@ -16,6 +16,7 @@ import astropy as ap
 import matplotlib.pyplot as plt
 import time
 from GUI import MRT_FUNC_PY4_GUI as mrtf
+import mrtstate
 from scipy.interpolate import griddata
 
 debug = False
@@ -80,6 +81,10 @@ def cmdGo(azimuth, elevation):
     mrtf.GoTo(azimuth, elevation)
 
 
+def cmdCurrentRefresh():
+    print('Current Reading Refresh')
+
+
 def cmdCurrentState():
     mrtf.PrintState()
 
@@ -91,8 +96,18 @@ def cmdGoAzimuth():
 def cmdGoElevation():
     return
 
-def cmdQuickMove():
-    return
+
+def cmdQuickMove(direction, increment):
+    if direction == 'UP':
+        mrtf.GoTo(mrtstate.state['azDeg'], mrtstate.state['elDeg'] + increment)
+    elif direction == 'DOWN':
+        mrtf.GoTo(mrtstate.state['azDeg'], mrtstate.state['elDeg'] - increment)
+    elif direction == 'CCW':
+        mrtf.GoTo(mrtstate.state['azDeg'] + increment, mrtstate.state['elDeg'])
+    elif direction == 'CW':
+        mrtf.GoTo(mrtstate.state['azDeg'] - increment, mrtstate.state['elDeg'])
+
+
 
 def cmdScan(azimuth, elevation, direction, amount, message):
     if azimuth.isdigit() & elevation.isdigit() & amount.isdigit():
@@ -269,17 +284,19 @@ class tabControl(ttk.Frame):
         labelNewAzimuth = ttk.Label(labelframeSetpoint, text='New Azimuth:')
         labelNewElevation = ttk.Label(labelframeSetpoint, text='New Elevation:')
 
-        #Entry
+        # Entry
         entryNewAzimuth = ttk.Entry(labelframeSetpoint, textvariable=varNewAzimuth)
         entryNewElevation = ttk.Entry(labelframeSetpoint, textvariable=varNewElevation)
 
         # Button
-        buttonElevationUp = ttk.Button(labelframeQuickMove, text='up')
-        buttonElevationDown = ttk.Button(labelframeQuickMove, text='down')
-        buttonAzimuthCCW = ttk.Button(labelframeQuickMove, text='left')
-        buttonAzimuthCW = ttk.Button(labelframeQuickMove, text='right')
-        buttonHome = ttk.Button(labelframeQuickMove, text='home')
-        buttonGo = ttk.Button(labelframeSetpoint, text='Go', command=lambda: cmdGo(entryNewAzimuth.get(), entryNewElevation.get()))
+        buttonElevationUp = ttk.Button(labelframeQuickMove, text='Up', command=lambda: cmdQuickMove('UP', varDegreeIncrement.get()))
+        buttonElevationDown = ttk.Button(labelframeQuickMove, text='Down', command=lambda: cmdQuickMove('DOWN', varDegreeIncrement.get()))
+        buttonAzimuthCCW = ttk.Button(labelframeQuickMove, text='Left', command=lambda: cmdQuickMove('CCW', varDegreeIncrement.get()))
+        buttonAzimuthCW = ttk.Button(labelframeQuickMove, text='Right', command=lambda: cmdQuickMove('CW', varDegreeIncrement.get()))
+        buttonHome = ttk.Button(labelframeQuickMove, text='Home')
+        buttonGo = ttk.Button(labelframeSetpoint, text='Go',
+                              command=lambda: cmdGo(entryNewAzimuth.get(), entryNewElevation.get()))
+        buttonRefresh = ttk.Button(labelframeCurrentReading, text='Refresh', command=lambda: cmdCurrentRefresh())
 
         # Radiobutton
         radiobutton1 = ttk.Radiobutton(labelframeDegreesIncrement, text='1 deg', variable=varDegreeIncrement, value=1)
@@ -314,6 +331,7 @@ class tabControl(ttk.Frame):
         buttonAzimuthCW.grid(row=1, column=2)
         buttonHome.grid(row=1, column=1)
         buttonGo.grid(row=2, column=0, columnspan=2)
+        buttonRefresh.grid(row=0, column=1)
 
         # Radiobutton
         radiobutton1.grid(row=0, column=0)
@@ -355,7 +373,9 @@ class tabScan(ttk.Frame):
                                                  *optionListScanDirection)
 
         # Button
-        buttonScan = ttk.Button(frameScanControl, text='Scan', command=lambda: cmdScan(varScanStartAzimuth.get(), varScanStartElevation.get(), varScanDirection.get(), varScanAmount.get(), labelScanMessage))
+        buttonScan = ttk.Button(frameScanControl, text='Scan',
+                                command=lambda: cmdScan(varScanStartAzimuth.get(), varScanStartElevation.get(),
+                                                        varScanDirection.get(), varScanAmount.get(), labelScanMessage))
 
         # Other
         # progressBar = ttk.Progressbar(frameScanControl, orient='horizontal', length=100, mode='determinate').grid(
@@ -432,7 +452,9 @@ class tabMap(ttk.Frame):
         entryMapWidth = ttk.Entry(frameMapControl, textvariable=varMapWidth)
 
         ''' Button '''
-        buttonMap = ttk.Button(frameMapControl, text='Map', command=lambda: cmdMap(entryMapStartAzimuth.get(), entryMapStartElevation.get(), entryMapHeight.get(), entryMapWidth.get(), labelMapMessage))
+        buttonMap = ttk.Button(frameMapControl, text='Map',
+                               command=lambda: cmdMap(entryMapStartAzimuth.get(), entryMapStartElevation.get(),
+                                                      entryMapHeight.get(), entryMapWidth.get(), labelMapMessage))
 
         ''' Other '''
         # progressBar = ttk.Progressbar(frameScanControl, orient='horizontal', length=100, mode='determinate').grid(row=2, column=0, columnspan=5, sticky='nsew')
