@@ -69,13 +69,15 @@ def portList(portDirectory='/dev'):  # Finds possible ports for your OS
     return ports
 
 
-def cmdMap(azimuth, elevation, height, width):
-    # mrtf.RasterMap(azimuth, elevation, height, width)
-    print(azimuth + elevation + height + width)
+def cmdMap(azimuth, elevation, height, width, message):
+    if azimuth.isdigit() & elevation.isdigit() & height.isdigit() & width.isdigit():
+        mrtf.RasterMap(azimuth, elevation, height, width)
+    else:
+        message.config(text='Check Values')
 
 
-def cmdGo():
-    return
+def cmdGo(azimuth, elevation):
+    mrtf.GoTo(azimuth, elevation)
 
 
 def cmdCurrentState():
@@ -89,12 +91,16 @@ def cmdGoAzimuth():
 def cmdGoElevation():
     return
 
+def cmdQuickMove():
+    return
 
-def cmdScan(az, el, direction, amount, message):
-    mrtf.GoTo(az, el)
-    mrtf.Direction(direction)
-    mrtf.Scan(amount)
-
+def cmdScan(azimuth, elevation, direction, amount, message):
+    if azimuth.isdigit() & elevation.isdigit() & amount.isdigit():
+        mrtf.GoTo(azimuth, elevation)
+        mrtf.Direction(direction)
+        mrtf.Scan(amount)
+    else:
+        message.config(text='Check Values')
 
 
 def cmdEnable():
@@ -166,7 +172,7 @@ class tabConnection(ttk.Frame):
         varSerialPort = tk.StringVar()
         varBaudrate = tk.StringVar()
 
-        optionListSerialPort = ['AUTO']
+        optionListSerialPort = portList()
         optionListBaudrate = [9600, 14400, 19200, 28800, 38400, 56000, 57600, 115200]
 
         frameConnection = ttk.Frame(self)
@@ -178,13 +184,13 @@ class tabConnection(ttk.Frame):
         labelSerialPort = ttk.Label(frameConnection, text='Serial Port')
         # labelSerialPort.pack(side='left', anchor='n', fill='x')
         labelSerialPort.grid(row=0, column=0, sticky='nsew')
-        optionMenuSerialPort = ttk.OptionMenu(frameConnection, varSerialPort, optionListSerialPort[0],
+        optionMenuSerialPort = ttk.OptionMenu(frameConnection, varSerialPort, 'Select port...',
                                               *optionListSerialPort)
         # optionMenuSerialPort.pack(fill='x', anchor='w')
         optionMenuSerialPort.grid(row=1, column=0, columnspan=2, sticky='nsew')
         labelBaudrate = ttk.Label(frameConnection, text='Baudrate')
         labelBaudrate.grid(row=3, column=0, sticky='nsew')
-        optionBaudrate = ttk.OptionMenu(frameConnection, varBaudrate, optionListBaudrate[0], *optionListBaudrate)
+        optionBaudrate = ttk.OptionMenu(frameConnection, varBaudrate, optionListBaudrate[7], *optionListBaudrate)
         optionBaudrate.grid(row=4, column=0, columnspan=2, sticky='nsew')
         buttonConnect = ttk.Button(frameConnection, text='Connect')
         buttonConnect.grid(row=5, column=0, columnspan=2, sticky='nsew')
@@ -248,26 +254,32 @@ class tabControl(ttk.Frame):
         labelframeCurrentReading = ttk.Labelframe(frameControl, text='Current Reading')
         labelframeQuickMove = ttk.Labelframe(frameControl, text='Quick Move')
         labelframeDegreesIncrement = ttk.Labelframe(labelframeQuickMove, text='Increment')
+        labelframeSetpoint = ttk.Labelframe(frameControl, text='Setpoint')
 
+        ''' Variables '''
         varDegreeIncrement = tk.IntVar(self)
+        varNewAzimuth = tk.IntVar()
+        varNewElevation = tk.IntVar()
 
         ''' Widgets '''
         # Label
         labelCurrentAzimuth = ttk.Label(labelframeCurrentReading, text='Azimuth: 0.0 deg')
         labelCurrentElevation = ttk.Label(labelframeCurrentReading, text='Elevation: 0.0 deg')
         labelCurrentPower = ttk.Label(labelframeCurrentReading, text='Power: 0.0 muW')
+        labelNewAzimuth = ttk.Label(labelframeSetpoint, text='New Azimuth:')
+        labelNewElevation = ttk.Label(labelframeSetpoint, text='New Elevation:')
+
+        #Entry
+        entryNewAzimuth = ttk.Entry(labelframeSetpoint, textvariable=varNewAzimuth)
+        entryNewElevation = ttk.Entry(labelframeSetpoint, textvariable=varNewElevation)
 
         # Button
         buttonElevationUp = ttk.Button(labelframeQuickMove, text='up')
-        buttonElevationUp.grid(row=0, column=1)
         buttonElevationDown = ttk.Button(labelframeQuickMove, text='down')
-        buttonElevationDown.grid(row=2, column=1)
         buttonAzimuthCCW = ttk.Button(labelframeQuickMove, text='left')
-        buttonAzimuthCCW.grid(row=1, column=0)
         buttonAzimuthCW = ttk.Button(labelframeQuickMove, text='right')
-        buttonAzimuthCW.grid(row=1, column=2)
-        buttonHome = ttk.Button(labelframeQuickMove, text='not sure')
-        buttonHome.grid(row=1, column=1)
+        buttonHome = ttk.Button(labelframeQuickMove, text='home')
+        buttonGo = ttk.Button(labelframeSetpoint, text='Go', command=lambda: cmdGo(entryNewAzimuth.get(), entryNewElevation.get()))
 
         # Radiobutton
         radiobutton1 = ttk.Radiobutton(labelframeDegreesIncrement, text='1 deg', variable=varDegreeIncrement, value=1)
@@ -280,13 +292,28 @@ class tabControl(ttk.Frame):
         ''' Grid Layout '''
         # Labelframe
         labelframeCurrentReading.grid(row=0, column=0)
-        labelframeQuickMove.grid(row=0, column=1)
+        labelframeQuickMove.grid(row=1, column=0)
         labelframeDegreesIncrement.grid(row=3, column=0, columnspan=3)
+        labelframeSetpoint.grid(row=2, column=0)
 
         # Label
         labelCurrentAzimuth.grid(row=0, column=0, sticky='we')
         labelCurrentElevation.grid(row=1, column=0, sticky='we')
         labelCurrentPower.grid(row=2, column=0, sticky='we')
+        labelNewAzimuth.grid(row=0, column=0, sticky='we')
+        labelNewElevation.grid(row=1, column=0, sticky='we')
+
+        # Entry
+        entryNewAzimuth.grid(row=0, column=1)
+        entryNewElevation.grid(row=1, column=1)
+
+        # Button
+        buttonElevationUp.grid(row=0, column=1)
+        buttonElevationDown.grid(row=2, column=1)
+        buttonAzimuthCCW.grid(row=1, column=0)
+        buttonAzimuthCW.grid(row=1, column=2)
+        buttonHome.grid(row=1, column=1)
+        buttonGo.grid(row=2, column=0, columnspan=2)
 
         # Radiobutton
         radiobutton1.grid(row=0, column=0)
@@ -328,7 +355,7 @@ class tabScan(ttk.Frame):
                                                  *optionListScanDirection)
 
         # Button
-        buttonScan = ttk.Button(frameScanControl, text='Scan', command=lambda: cmdScan(varScanStartAzimuth.get(), varScanStartElevation.get(), varScanDirection.get(), varScanAmount.get()))
+        buttonScan = ttk.Button(frameScanControl, text='Scan', command=lambda: cmdScan(varScanStartAzimuth.get(), varScanStartElevation.get(), varScanDirection.get(), varScanAmount.get(), labelScanMessage))
 
         # Other
         # progressBar = ttk.Progressbar(frameScanControl, orient='horizontal', length=100, mode='determinate').grid(
@@ -405,7 +432,7 @@ class tabMap(ttk.Frame):
         entryMapWidth = ttk.Entry(frameMapControl, textvariable=varMapWidth)
 
         ''' Button '''
-        buttonMap = ttk.Button(frameMapControl, text='Map', command=lambda: cmdMap(entryMapStartAzimuth.get(), entryMapStartElevation.get(), entryMapHeight.get(), entryMapWidth.get()))
+        buttonMap = ttk.Button(frameMapControl, text='Map', command=lambda: cmdMap(entryMapStartAzimuth.get(), entryMapStartElevation.get(), entryMapHeight.get(), entryMapWidth.get(), labelMapMessage))
 
         ''' Other '''
         # progressBar = ttk.Progressbar(frameScanControl, orient='horizontal', length=100, mode='determinate').grid(row=2, column=0, columnspan=5, sticky='nsew')

@@ -74,6 +74,17 @@ eloff = 0.
 azoff = -180.
 
 
+def connectToArduino(port):
+    ser.port(port)
+    ser.baudrate(115200)
+    ser.open()
+    FlushSerialBuffers(ser)
+    ResetArduinoUno(ser, timeout=15, nbytesExpected=nIDBytes)
+    mrtstate.offsets['eloff'] = 0.
+    mrtstate.offsets['azoff'] = -180.
+    ser.write(REPORT_STATE)
+    mrtstate.state = readState(ser)
+
 # >>>>>>> f03f1fb8914fd815361cea8904e5a6926da6b4ef
 def WaitForInputBytes(timeout=10, nbytesExpected=1):
     """ Wait for bytes to appear on the input serial buffer up to the timeout
@@ -397,18 +408,14 @@ def GoEl(elGe=None):
 def RasterMap(az, el, azd, eld):
     """Make a map centered at a given point, with given dimensions"""
     # center point input
-    azG = az
-    azG = float(azG)
-    elG = el
-    elG = float(elG)
+    azG = float(az)
+    elG = float(el)
     # dimensions input
-    DIMA = azd
-    DIMAF = float(DIMA)
+    DIMAF = float(azd)
     ONE = 1.0
     ONEF = float(ONE)
-    DIME = eld
-    DIMEF = float(DIME)
-    DIMEI = int(DIME) / 2
+    DIMEF = float(eld)
+    DIMEI = int(eld) / 2
     azM = azG - DIMAF / 2.
     elM = elG + DIMEI
     # determine figure size based on inputs
