@@ -74,8 +74,8 @@ eloff = 0.
 azoff = -180.
 
 
-def connectToArduino(port):
-    ser.port(port)
+def connectToArduino():
+    ser.port('/dev/cu.usbmodem2223401')
     ser.baudrate(115200)
     ser.open()
     FlushSerialBuffers(ser)

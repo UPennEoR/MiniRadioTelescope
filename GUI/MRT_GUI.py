@@ -3,7 +3,7 @@ import sys
 import tkinter as tk
 from tkinter import ttk, scrolledtext
 
-from matplotlib import pyplot as plt
+from matplotlib import pyplot as plt, animation
 from matplotlib import style
 from matplotlib.backends._backend_tk import NavigationToolbar2Tk
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
@@ -70,6 +70,10 @@ def portList(portDirectory='/dev'):  # Finds possible ports for your OS
     return ports
 
 
+def cmdConnect(port):
+    mrtf.connectToArduino()
+
+
 def cmdMap(azimuth, elevation, height, width, message):
     if azimuth.isdigit() & elevation.isdigit() & height.isdigit() & width.isdigit():
         mrtf.RasterMap(azimuth, elevation, height, width)
@@ -78,38 +82,32 @@ def cmdMap(azimuth, elevation, height, width, message):
 
 
 def cmdGo(azimuth, elevation):
-    mrtf.GoTo(azimuth, elevation)
+    print(azimuth)
+    print(elevation)
+    # mrtf.GoTo(azimuth, elevation)
 
 
-def cmdCurrentRefresh():
-    print('Current Reading Refresh')
+def cmdCurrentRefresh(labelAzimuth, labelElevation, labelPower):
+    labelAzimuth.config(text='Azimuth:  ' + str(mrtstate.state['azDeg'][0]) + ' deg')
+    labelElevation.config(text='Elevation:  ' + str(mrtstate.state['elDeg'][0]) + ' deg')
 
 
 def cmdCurrentState():
     mrtf.PrintState()
 
 
-def cmdGoAzimuth():
-    return
-
-
-def cmdGoElevation():
-    return
-
-
 def cmdQuickMove(direction, increment):
     if direction == 'UP':
-        mrtf.GoTo(mrtstate.state['azDeg'], mrtstate.state['elDeg'] + increment)
+        mrtf.GoTo(float(mrtstate.state['azDeg']), float(mrtstate.state['elDeg']) + increment)
     elif direction == 'DOWN':
-        mrtf.GoTo(mrtstate.state['azDeg'], mrtstate.state['elDeg'] - increment)
+        mrtf.GoTo(float(mrtstate.state['azDeg']), float(mrtstate.state['elDeg']) - increment)
     elif direction == 'CCW':
-        mrtf.GoTo(mrtstate.state['azDeg'] + increment, mrtstate.state['elDeg'])
+        mrtf.GoTo(float(mrtstate.state['azDeg']) + increment, float(mrtstate.state['elDeg']))
     elif direction == 'CW':
-        mrtf.GoTo(mrtstate.state['azDeg'] - increment, mrtstate.state['elDeg'])
+        mrtf.GoTo(float(mrtstate.state['azDeg']) - increment, float(mrtstate.state['elDeg']))
 
 
-
-def cmdScan(azimuth, elevation, direction, amount, message):
+def cmdScan(azimuth, elevation, direction, amount, message, figure):
     if azimuth.isdigit() & elevation.isdigit() & amount.isdigit():
         mrtf.GoTo(azimuth, elevation)
         mrtf.Direction(direction)
@@ -143,6 +141,24 @@ def cmdSetPosition():
     # offsets['eloff'] = arduino_el - newel
     # current_state = StdCmd(ser, REPORT_STATE)
     mrtf.PrintState()
+
+
+def animationScan(plot):
+    pullData = open('data.txt', 'r').read()
+    dataArray = pullData.split('\n')
+    xar = []
+    yar = []
+    for eachLine in dataArray:
+        if len(eachLine) > 1:
+            x, y = eachLine.split(',')
+            xar.append(int(x))
+            yar.append(int(y))
+    plot.clear()
+    plot.plot(xar, yar)
+
+
+def animationMap(plot):
+    return
 
 
 class mrtGUI(tk.Tk):
@@ -207,7 +223,7 @@ class tabConnection(ttk.Frame):
         labelBaudrate.grid(row=3, column=0, sticky='nsew')
         optionBaudrate = ttk.OptionMenu(frameConnection, varBaudrate, optionListBaudrate[7], *optionListBaudrate)
         optionBaudrate.grid(row=4, column=0, columnspan=2, sticky='nsew')
-        buttonConnect = ttk.Button(frameConnection, text='Connect')
+        buttonConnect = ttk.Button(frameConnection, text='Connect', command=lambda: mrtf.connectToArduino())
         buttonConnect.grid(row=5, column=0, columnspan=2, sticky='nsew')
 
 
@@ -278,9 +294,9 @@ class tabControl(ttk.Frame):
 
         ''' Widgets '''
         # Label
-        labelCurrentAzimuth = ttk.Label(labelframeCurrentReading, text='Azimuth: 0.0 deg')
-        labelCurrentElevation = ttk.Label(labelframeCurrentReading, text='Elevation: 0.0 deg')
-        labelCurrentPower = ttk.Label(labelframeCurrentReading, text='Power: 0.0 muW')
+        labelCurrentAzimuth = ttk.Label(labelframeCurrentReading, text='Azimuth:  0.0 deg')
+        labelCurrentElevation = ttk.Label(labelframeCurrentReading, text='Elevation:  0.0 deg')
+        labelCurrentPower = ttk.Label(labelframeCurrentReading, text='Power:  0.0 muW')
         labelNewAzimuth = ttk.Label(labelframeSetpoint, text='New Azimuth:')
         labelNewElevation = ttk.Label(labelframeSetpoint, text='New Elevation:')
 
@@ -289,14 +305,20 @@ class tabControl(ttk.Frame):
         entryNewElevation = ttk.Entry(labelframeSetpoint, textvariable=varNewElevation)
 
         # Button
-        buttonElevationUp = ttk.Button(labelframeQuickMove, text='Up', command=lambda: cmdQuickMove('UP', varDegreeIncrement.get()))
-        buttonElevationDown = ttk.Button(labelframeQuickMove, text='Down', command=lambda: cmdQuickMove('DOWN', varDegreeIncrement.get()))
-        buttonAzimuthCCW = ttk.Button(labelframeQuickMove, text='Left', command=lambda: cmdQuickMove('CCW', varDegreeIncrement.get()))
-        buttonAzimuthCW = ttk.Button(labelframeQuickMove, text='Right', command=lambda: cmdQuickMove('CW', varDegreeIncrement.get()))
+        buttonElevationUp = ttk.Button(labelframeQuickMove, text='Up',
+                                       command=lambda: cmdQuickMove('UP', varDegreeIncrement.get()))
+        buttonElevationDown = ttk.Button(labelframeQuickMove, text='Down',
+                                         command=lambda: cmdQuickMove('DOWN', varDegreeIncrement.get()))
+        buttonAzimuthCCW = ttk.Button(labelframeQuickMove, text='Left',
+                                      command=lambda: cmdQuickMove('CCW', varDegreeIncrement.get()))
+        buttonAzimuthCW = ttk.Button(labelframeQuickMove, text='Right',
+                                     command=lambda: cmdQuickMove('CW', varDegreeIncrement.get()))
         buttonHome = ttk.Button(labelframeQuickMove, text='Home')
         buttonGo = ttk.Button(labelframeSetpoint, text='Go',
-                              command=lambda: cmdGo(entryNewAzimuth.get(), entryNewElevation.get()))
-        buttonRefresh = ttk.Button(labelframeCurrentReading, text='Refresh', command=lambda: cmdCurrentRefresh())
+                              command=lambda: cmdGo(varNewAzimuth.get(), varNewElevation.get()))
+        buttonRefresh = ttk.Button(labelframeCurrentReading, text='Refresh',
+                                   command=lambda: cmdCurrentRefresh(labelCurrentAzimuth, labelCurrentElevation,
+                                                                     labelCurrentPower))
 
         # Radiobutton
         radiobutton1 = ttk.Radiobutton(labelframeDegreesIncrement, text='1 deg', variable=varDegreeIncrement, value=1)
