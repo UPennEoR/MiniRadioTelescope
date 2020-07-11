@@ -19,7 +19,7 @@ from GUI import MRT_FUNC_PY4_GUI as mrtf
 import mrtstate
 from scipy.interpolate import griddata
 
-debug = False
+debug = True
 
 '''
 Telescope Movement Commands
@@ -43,35 +43,37 @@ M350 Ann Enn - Microstepping Mode (Full - 1/16) nn:(1, 2, 4, 8, 16)
 N#### - Line Number of G-Code Sent
 '''
 
+print('Opening serial port', mrtf.portList()[0])
+print('with baud', mrtf.baud)
+ser = mrtf.serial.Serial(mrtf.portList()[0], mrtf.baud)
+print('Before flushing buffers')
+print('Bytes in waiting', ser.inWaiting())
+mrtf.FlushSerialBuffers(ser)
+print('After flushing buffers')
+print('Bytes in waiting', ser.inWaiting())
+print('Resetting Arduino')
+print('Before reset')
+print('Bytes in waiting', ser.inWaiting())
+mrtf.ResetArduinoUno(ser, timeout=15, nbytesExpected=mrtf.nIDBytes)
+print('After reset')
+print('Bytes in waiting', ser.inWaiting())
+print(ser.inWaiting())
 
-def portList(portDirectory='/dev'):  # Finds possible ports for your OS
-    linuxPortPrefix = 'tty'
-    macOSPortPrefix = 'cu.usbmodem'
-    ports = []
+output = mrtf.read_ser_buffer_to_eot(ser)
+print(output)
 
-    # Functions
-    def portSearch(portPrefix):
-        for file in os.listdir(portDirectory):
-            if file.startswith(portPrefix):
-                ports.append(os.path.join(portDirectory, file))
+mrtstate.offsets['eloff'] = 0.
+mrtstate.offsets['azoff'] = -180.
 
-    # Logic
-    if sys.platform.startswith('linux'):
-        portSearch(linuxPortPrefix)
-    elif sys.platform.startswith('darwin'):
-        portSearch(macOSPortPrefix)
+print(mrtstate.offsets)
 
-    # Debug
-    if debug:
-        print('DEBUG: The following are possible Arduino ports: ')
+ser.write(mrtf.REPORT_STATE)
+mrtstate.state = mrtf.readState(ser)
 
-        print('DEBUG: ' + str(ports))
-
-    return ports
-
+mrtf.PrintState()
 
 def cmdConnect(port):
-    mrtf.connectToArduino()
+    mrtf.connectToArduino(port)
 
 
 def cmdMap(azimuth, elevation, height, width, message):

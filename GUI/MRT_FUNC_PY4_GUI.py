@@ -5,6 +5,9 @@ Created on Tue Jun 26 12:35:20 2018
 
 @author: oscartinney
 """
+import os
+import sys
+
 import serial
 import numpy as np
 # import healpy as hp
@@ -31,7 +34,7 @@ from scipy.interpolate import griddata
 # LHS USB conection on James' Mac 2019/07/19
 # port = '/dev/cu.usbmodem14101'
 # port = '/dev/cu.usbmodem14331'
-port = '/dev/ttyACM0'
+
 # port = '/dev/cu.usbmodem14601'
 baud = 115200
 nIDBytes = 18
@@ -40,7 +43,6 @@ nIDBytes = 18
 # Should remove this and do the initialization of the serial port in the main
 # body of the program.  That will mean re-writing a lot of functions to explicitly
 # accept `ser` as a variable.  :(
-ser = serial.Serial()
 # ser.port()
 # ser.baudrate()
 # ser.open()
@@ -73,8 +75,32 @@ DISABLE = b'D'
 eloff = 0.
 azoff = -180.
 
+def portList(portDirectory='/dev'):  # Finds possible ports for your OS
+    linuxPortPrefix = 'tty'
+    macOSPortPrefix = 'cu.usbmodem'
+    ports = []
 
-def connectToArduino():
+    # Functions
+    def portSearch(portPrefix):
+        for file in os.listdir(portDirectory):
+            if file.startswith(portPrefix):
+                ports.append(os.path.join(portDirectory, file))
+
+    # Logic
+    if sys.platform.startswith('linux'):
+        portSearch(linuxPortPrefix)
+    elif sys.platform.startswith('darwin'):
+        portSearch(macOSPortPrefix)
+
+    # Debug
+    # if debug:
+    #     print('DEBUG: The following are possible Arduino ports: ')
+    #
+    #     print('DEBUG: ' + str(ports))
+
+    return ports
+
+def connectToArduino(ser):
     ser.port('/dev/cu.usbmodem2223401')
     ser.baudrate(115200)
     ser.open()
@@ -86,7 +112,7 @@ def connectToArduino():
     mrtstate.state = readState(ser)
 
 # >>>>>>> f03f1fb8914fd815361cea8904e5a6926da6b4ef
-def WaitForInputBytes(timeout=10, nbytesExpected=1):
+def WaitForInputBytes(ser, timeout=10, nbytesExpected=1):
     """ Wait for bytes to appear on the input serial buffer up to the timeout
     specified, in seconds """
     bytesFound = False
@@ -105,7 +131,7 @@ def ResetArduinoUno(ser, timeout=10, nbytesExpected=1):
     ser.setDTR(False)
     time.sleep(1)
     ser.setDTR(True)
-    nbytes, dt = WaitForInputBytes(nbytesExpected=nbytesExpected)
+    nbytes, dt = WaitForInputBytes(ser, nbytesExpected=nbytesExpected)
     print(nbytes, 'bytes found after', dt, 'seconds')
     return
 
