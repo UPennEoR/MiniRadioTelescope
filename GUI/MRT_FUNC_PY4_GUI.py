@@ -309,12 +309,12 @@ def GoTo(ser, azG=None, elG=None):
     if elG == None:
         elG = input("El: ")
         elG = float(elG)
-    d_az = azG - float(mrtstate.state['azDeg'][0])
-    d_el = elG - float(mrtstate.state['elDeg'][0])
+    d_az = float(azG) - float(mrtstate.state['azDeg'][0])
+    d_el = float(elG) - float(mrtstate.state['elDeg'][0])
     print('d_az: ', d_az)
     print('d_el: ', d_el)
     # check to make sure it's clear to move
-    if (azG >= 0. and azG <= 360.):
+    if (float(azG) >= 0. and float(azG) <= 360.):
         az_ok = True
     else:
         print('Requested azimuth out of bounds')
@@ -323,7 +323,7 @@ def GoTo(ser, azG=None, elG=None):
             az_ok = True
         else:
             az_ok = False
-    if (elG >= -mrtstate.offsets['eloff'] and elG <= 120.):
+    if (float(elG) >= -mrtstate.offsets['eloff'] and float(elG) <= 120.):
         el_ok = True
     else:
         print('Requested elevation out of bounds')
@@ -466,7 +466,7 @@ def RasterMap(ser, az, el, azd, eld):
     TT = (AZT + ELT) / 60
 
     # move to starting point
-    GoTo(azG=azM, elG=elM)
+    GoTo(ser, azG=azM, elG=elM)
 
     # plt.figure(1)
     # plt.clf()

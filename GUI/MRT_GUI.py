@@ -111,7 +111,7 @@ def cmdQuickMove(direction, increment):
         mrtf.GoTo(ser, float(mrtstate.state['azDeg']) - increment, float(mrtstate.state['elDeg']))
 
 
-def cmdScan(azimuth, elevation, direction, amount, message, figure):
+def cmdScan(azimuth, elevation, direction, amount, message):
     if azimuth.isdigit() & elevation.isdigit() & amount.isdigit():
         mrtf.GoTo(ser, azimuth, elevation)
         mrtf.Direction(ser, direction)
