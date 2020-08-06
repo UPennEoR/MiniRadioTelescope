@@ -37,7 +37,6 @@ from scipy.interpolate import griddata
 
 # port = '/dev/cu.usbmodem14601'
 # from GUI.MRT_GUI import ser
-from GUI import MRT_GUI as gui
 
 baud = 115200
 nIDBytes = 18
@@ -337,15 +336,15 @@ def GoTo(ser, azG=None, elG=None):
     # Move
     if (az_ok and el_ok):
         # Do the azimuth move
-        StdCmd(gui.ser, AZIMUTH)
-        StdCmd(gui.ser, ENABLE)
+        StdCmd(ser, AZIMUTH)
+        StdCmd(ser, ENABLE)
         print('Azimuth move starting')
         PrintState()
         if d_az < 0:
             # If moving to a less positive azimuth, go CCW
-            StdCmd(gui.ser, FORWARD)
+            StdCmd(ser, FORWARD)
         else:
-            StdCmd(gui.ser, REVERSE)
+            StdCmd(ser, REVERSE)
         Scan(ser, np.abs(d_az))
         # Elevation move
         StdCmd(ser, ELEVATION)
