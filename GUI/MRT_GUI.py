@@ -19,6 +19,8 @@ from GUI import MRT_FUNC_PY4_GUI as mrtf
 import mrtstate
 from scipy.interpolate import griddata
 
+from GUI.MRT_FUNC_PY4_GUI import portList
+
 debug = True
 
 '''
@@ -78,7 +80,7 @@ def cmdConnect(port):
 
 def cmdMap(azimuth, elevation, height, width, message):
     if azimuth.isdigit() & elevation.isdigit() & height.isdigit() & width.isdigit():
-        mrtf.RasterMap(azimuth, elevation, height, width)
+        mrtf.RasterMap(ser, azimuth, elevation, height, width)
     else:
         message.config(text='Check Values')
 
@@ -100,19 +102,19 @@ def cmdCurrentState():
 
 def cmdQuickMove(direction, increment):
     if direction == 'UP':
-        mrtf.GoTo(float(mrtstate.state['azDeg']), float(mrtstate.state['elDeg']) + increment)
+        mrtf.GoTo(ser, float(mrtstate.state['azDeg'][0]), float(mrtstate.state['elDeg'][0]) + increment)
     elif direction == 'DOWN':
-        mrtf.GoTo(float(mrtstate.state['azDeg']), float(mrtstate.state['elDeg']) - increment)
+        mrtf.GoTo(ser, float(mrtstate.state['azDeg']), float(mrtstate.state['elDeg']) - increment)
     elif direction == 'CCW':
-        mrtf.GoTo(float(mrtstate.state['azDeg']) + increment, float(mrtstate.state['elDeg']))
+        mrtf.GoTo(ser, float(mrtstate.state['azDeg']) + increment, float(mrtstate.state['elDeg']))
     elif direction == 'CW':
-        mrtf.GoTo(float(mrtstate.state['azDeg']) - increment, float(mrtstate.state['elDeg']))
+        mrtf.GoTo(ser, float(mrtstate.state['azDeg']) - increment, float(mrtstate.state['elDeg']))
 
 
 def cmdScan(azimuth, elevation, direction, amount, message, figure):
     if azimuth.isdigit() & elevation.isdigit() & amount.isdigit():
-        mrtf.GoTo(azimuth, elevation)
-        mrtf.Direction(direction)
+        mrtf.GoTo(ser, azimuth, elevation)
+        mrtf.Direction(ser, direction)
         mrtf.Scan(amount)
     else:
         message.config(text='Check Values')

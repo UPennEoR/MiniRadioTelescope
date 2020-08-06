@@ -355,14 +355,14 @@ void resetBEDPins()
   digitalWrite(EN, LOW); // Motor is on at power-on
 }
 
-/*void SetAxis(char axis)
+void SetAxis(char axis)
 {
   if (axis == 'A'){
     STP = AZSTP;
     DIR = AZDIR;
     MS1 = AZMS1;
     MS2 = AZMS2;
-    MS3 = AZMS3;
+    //MS3 = AZMS3;
     EN = AZEN;
     current_axis = 'A';
   } else if (axis == 'L'){
@@ -370,7 +370,7 @@ void resetBEDPins()
     DIR = ELDIR;
     MS1 = ELMS1;
     MS2 = ELMS2;
-    MS3 = ELMS3;
+    //MS3 = ELMS3;
     EN = ELEN;
     current_axis = 'L';
   }
@@ -381,7 +381,7 @@ void resetBEDPins()
 //    Serial.println("EL");
 //  }
 //  
-}*/
+}
 
 // Somehow, this is the most inelegant one of the bunch
 void SetEnable(char enable)
@@ -737,5 +737,3 @@ float ax, float ay, float az, float mx, float my, float mz)
   //Serial.print("Heading: "); 
   Serial.print(heading, 2);
 }
-
-

@@ -36,9 +36,11 @@ from scipy.interpolate import griddata
 # port = '/dev/cu.usbmodem14331'
 
 # port = '/dev/cu.usbmodem14601'
+# from GUI.MRT_GUI import ser
+from GUI import MRT_GUI as gui
+
 baud = 115200
 nIDBytes = 18
-
 
 # Should remove this and do the initialization of the serial port in the main
 # body of the program.  That will mean re-writing a lot of functions to explicitly
@@ -75,6 +77,7 @@ DISABLE = b'D'
 eloff = 0.
 azoff = -180.
 
+
 def portList(portDirectory='/dev'):  # Finds possible ports for your OS
     linuxPortPrefix = 'tty'
     macOSPortPrefix = 'cu.usbmodem'
@@ -100,6 +103,7 @@ def portList(portDirectory='/dev'):  # Finds possible ports for your OS
 
     return ports
 
+
 def connectToArduino(ser):
     ser.port('/dev/cu.usbmodem2223401')
     ser.baudrate(115200)
@@ -110,6 +114,7 @@ def connectToArduino(ser):
     mrtstate.offsets['azoff'] = -180.
     ser.write(REPORT_STATE)
     mrtstate.state = readState(ser)
+
 
 # >>>>>>> f03f1fb8914fd815361cea8904e5a6926da6b4ef
 def WaitForInputBytes(ser, timeout=10, nbytesExpected=1):
@@ -165,7 +170,7 @@ def numpyState(state):
     return ndata
 
 
-def parseState(buffer, state):
+def parseState(ser, buffer, state):
     """ Take the raw string returned by the Arduino ("buffer") for the current state,
     and parse it into the state dictionary defined by the state_vars """
     vars = buffer[0].split()
@@ -187,7 +192,7 @@ def readState(ser, init=None):
     else:
         data = init
     buf = read_ser_buffer_to_eot(ser)
-    data = parseState(buf, data)
+    data = parseState(ser, buf, data)
     ndata = numpyState(data)
     mrtstate.state = ndata
     return ndata
@@ -208,7 +213,7 @@ def readStream(ser):
         buf = read_ser_buffer_to_eot(ser)
         if (buf[0] != EDTX):
             # print(buf[0])
-            data = parseState(buf, data)
+            data = parseState(ser, buf, data)
     ndata = numpyState(data)
     # StdCmd(ser,REPORT_STATE)
     return ndata
@@ -236,7 +241,8 @@ def read_ser_buffer_to_eot(ser):
         buf = ser.readline()
     return output
 
-def Direction(direction):
+
+def Direction(ser, direction):
     if direction == 'Counterclockwise':
         StdCmd(ser, AZIMUTH)
         StdCmd(ser, ENABLE)
@@ -253,6 +259,7 @@ def Direction(direction):
         StdCmd(ser, ELEVATION)
         StdCmd(ser, ENABLE)
         StdCmd(ser, REVERSE)
+
 
 def Scan(ser, deg):
     """Scan a specified number of degrees on the current axis in the current direction"""
@@ -294,7 +301,7 @@ def PlotData(ndata):
     return
 
 
-def GoTo(azG=None, elG=None):
+def GoTo(ser, azG=None, elG=None):
     """Travel to a specified azimuth and elevation"""
     # user inputs for coordinates
     if azG == None:
@@ -330,15 +337,15 @@ def GoTo(azG=None, elG=None):
     # Move
     if (az_ok and el_ok):
         # Do the azimuth move
-        StdCmd(ser, AZIMUTH)
-        StdCmd(ser, ENABLE)
+        StdCmd(gui.ser, AZIMUTH)
+        StdCmd(gui.ser, ENABLE)
         print('Azimuth move starting')
         PrintState()
         if d_az < 0:
             # If moving to a less positive azimuth, go CCW
-            StdCmd(ser, FORWARD)
+            StdCmd(gui.ser, FORWARD)
         else:
-            StdCmd(ser, REVERSE)
+            StdCmd(gui.ser, REVERSE)
         Scan(ser, np.abs(d_az))
         # Elevation move
         StdCmd(ser, ELEVATION)
@@ -358,7 +365,7 @@ def GoTo(azG=None, elG=None):
     return
 
 
-def GoAz(azGa=None):
+def GoAz(ser, azGa=None):
     """Go to a specific Azimuth without changing elevation"""
     if azGa == None:
         azGa = input("Az: ")
@@ -395,7 +402,7 @@ def GoAz(azGa=None):
     return
 
 
-def GoEl(elGe=None):
+def GoEl(ser, elGe=None):
     """Go to a specific elevation without changing azimuth"""
     if elGe == None:
         elGe = input("El: ")
@@ -431,7 +438,7 @@ def GoEl(elGe=None):
     return
 
 
-def RasterMap(az, el, azd, eld):
+def RasterMap(ser, az, el, azd, eld):
     """Make a map centered at a given point, with given dimensions"""
     # center point input
     azG = float(az)
@@ -545,7 +552,7 @@ def PrintMenu():
     return
 
 
-def ETGOHOME():
+def ETGOHOME(ser):
     if (int(mrtstate.state['el_lower_limit'][0]) == 1):
         print("Elevation already homed.")
     else:
@@ -561,7 +568,7 @@ def ETGOHOME():
     return
 
 
-def ScanSouthSky():
+def ScanSouthSky(ser):
     """Scan the entire south sky, except between 80 and 90 degrees for elevation limited by telescope design"""
     # define and convert variables for input to the scan function
     DIM = 180
