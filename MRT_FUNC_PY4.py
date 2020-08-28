@@ -26,11 +26,11 @@ from scipy.interpolate import griddata
 #port = '/dev/cu.usbmodem14631'
 #port = '/dev/cu.usbmodem14621'
 # RHS USB connection on James' Mac 2019/04/26
-#port = '/dev/cu.usbmodem14201'
+port = '/dev/cu.usbmodem14201'
 # LHS USB conection on James' Mac 2019/07/19
 #port = '/dev/cu.usbmodem14101'
 #port = '/dev/cu.usbmodem14331'
-port = '/dev/ttyACM0'
+#port = '/dev/ttyACM0'
 #port = '/dev/cu.usbmodem14601'
 baud = 115200
 nIDBytes = 18
