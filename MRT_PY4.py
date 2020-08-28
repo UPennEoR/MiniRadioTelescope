@@ -116,7 +116,7 @@ while(operate):
             # Convert
             #ndata = numpyState(ndata)
             # Save
-            np.savez(file=dir+time.ctime().replace(' ','_')+'.npz',
+            np.savez(file=time.ctime().replace(' ','_')+'.npz',
                      ndata=ndata)
             # Plot
             mrtf.PlotData(ndata)
@@ -199,7 +199,7 @@ while(operate):
             # Convert
             #ndata = numpyState(ndata)
             # Save
-            np.savez(file=dir+time.ctime().replace(' ','_')+'.npz',
+            np.savez(file=time.ctime().replace(' ','_')+'.npz',
                      ndata=ndata)
             # Plot
             mrtf.PlotData(ndata)
