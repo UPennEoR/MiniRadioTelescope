@@ -1,4 +1,9 @@
-# verified 12 July 2018: working
+'''This is the current working version of the MRT control as of 2/16/2021
+
+It needs to work with MRTv2.ino, for which the last major update was
+to add the shift register code.
+
+'''
 
 import numpy as np
 #import healpy as hp
