@@ -64,7 +64,7 @@ char last_command[numChars];
 boolean newData = false;
 
 unsigned long t1, t2, dt;
-unsigned long dt_loop = 1000000; // microseconds; this should be fast
+unsigned long dt_loop = 4000; // microseconds; this should be fast
 unsigned long counter = 0;
 
 signed long az_steps = 0;
@@ -125,6 +125,7 @@ void loop() {
     axis = receivedChars[0];
     // Set pins based on the axis selected
     // This should be a SetAxis command
+    // Enable the axis that's about to move
     switch(axis){
       case 'a': 
         axindx = 0;
@@ -145,34 +146,58 @@ void loop() {
         EN = ELEN;
         break;
     }
+    digitalWrite(EN, LOW); // enable the axis
 
     sense = receivedChars[1];
     switch(sense){
       case '+':
+        shiftWrite(DIR, LOW);
         sign = 1;
         break;
       case '-':
+        shiftWrite(DIR, HIGH);
         sign = -1;
         break;
     }
    
     step_mode = receivedChars[2];
     switch(step_mode){
+      
       case 'm':
-      step_size = 1;
-      break;
+        shiftWrite(MS1, HIGH); // Pulling all three high to get 1/16 step
+        shiftWrite(MS2, HIGH);
+        shiftWrite(MS3, HIGH);
+        step_size = 1;
+        break;
+        
       case 'e':
-      step_size = 2;
-      break;
+        shiftWrite(MS1, HIGH); // Configuration for eighth step
+        shiftWrite(MS2, HIGH);
+        shiftWrite(MS3, LOW);
+        step_size = 2;
+        break;
+
       case 'q':
-      step_size = 4;
-      break;
+        shiftWrite(MS1, LOW); // Configuration for quarter step
+        shiftWrite(MS2, HIGH);
+        shiftWrite(MS3, LOW);
+        step_size = 4;
+        break;
+        
       case 'h':
-      step_size = 8;
-      break;
+        shiftWrite(MS1, HIGH); // Configuration for half step
+        shiftWrite(MS2, LOW);
+        shiftWrite(MS3, LOW);
+        step_size = 8;
+        break;
+
       case 'f':
-      step_size = 16;
-      break; 
+        shiftWrite(MS1, LOW); // Pulling all three low to full step
+        shiftWrite(MS2, LOW);
+        shiftWrite(MS3, LOW);
+        step_size = 16;
+        break; 
+        
     }
     
     // This seems very silly
@@ -197,42 +222,11 @@ void loop() {
 
   // Write out the data for this loop
   ReportState();
-  /*
-  Serial.print(counter);
-  Serial.print(" dt: ");
-  Serial.print(dt/1000.); // Prints the actual dt to complete the loop
-  Serial.print(" ");
-  Serial.print(axis); 
-  Serial.print(" ");
-  Serial.print(sense); 
-  Serial.print(" ");
-  Serial.print(step_mode); 
-  Serial.print(" ");
-  Serial.print(N_cch); 
-  Serial.print(" ");
-  Serial.print(number_of_steps); 
-  Serial.print(" ");
-  Serial.print(NreceivedChars);
-  Serial.print(" ");
-  Serial.print(receivedChars);
-  // This is here just to make it line up better
-  Serial.print(" NSR ");
-  Serial.print(n_steps_remaining);
-  Serial.print(" FH ");
-  Serial.print(first_half);
-  Serial.print(" T ");
-  Serial.print(transition);
-  Serial.print(" S ");
-  Serial.print(stepstate);
-  Serial.print(" AZ ");
-  Serial.print(steps[0]);
-  Serial.print(" EL ");
-  Serial.println(steps[1]);
-  */
 
   if (n_steps_remaining > 0){
-
-    executingCmd = true;
+  
+    // Axis was already enabled when the command was received; no need to do it at every step
+    //executingCmd = true;
 
     if (n_half < N_cch){
         transition = false;
@@ -275,6 +269,7 @@ void loop() {
      
   } else {
 
+    digitalWrite(EN, HIGH); // disable the axis when not moving.  could be a problem ...
     executingCmd = false;
     
   }
@@ -356,78 +351,33 @@ void ReportState()
 {
     // Write out the data for this loop
   Serial.print(counter);
-  Serial.print(" dt: ");
+  Serial.print(" ");
   Serial.print(dt/1000.); // Prints the actual dt to complete the loop
   Serial.print(" ");
-  Serial.print(axis); 
-  Serial.print(" ");
-  Serial.print(sense); 
-  Serial.print(" ");
-  Serial.print(step_mode); 
-  Serial.print(" ");
-  Serial.print(N_cch); 
-  Serial.print(" ");
-  Serial.print(number_of_steps); 
-  Serial.print(" ");
-  Serial.print(NreceivedChars);
-  Serial.print(" ");
+  //Serial.print(axis); 
+  //Serial.print(" ");
+  //Serial.print(sense); 
+  //Serial.print(" ");
+  //Serial.print(step_mode); 
+  //Serial.print(" ");
+  //Serial.print(N_cch); 
+  //Serial.print(" ");
+  //Serial.print(number_of_steps); 
+  //Serial.print(" ");
+  //Serial.print(NreceivedChars);
+  //Serial.print(" ");
   Serial.print(receivedChars);
-  Serial.print(" NSR ");
-  Serial.print(n_steps_remaining);
-  Serial.print(" FH ");
-  Serial.print(first_half);
-  Serial.print(" T ");
-  Serial.print(transition);
-  Serial.print(" S ");
-  Serial.print(stepstate);
+  //Serial.print(" NSR ");
+  //Serial.print(n_steps_remaining);
+  //Serial.print(" FH ");
+  //Serial.print(first_half);
+  //Serial.print(" T ");
+  //Serial.print(transition);
+  //Serial.print(" S ");
+  //Serial.print(stepstate);
   Serial.print(" AZ ");
   Serial.print(steps[0]);
   Serial.print(" EL ");
   Serial.println(steps[1]);
 
-}
-
-// Translates mode for the shift register
-void SetStepMode(char mode)
-{
-  if (mode == 'm') // Default
-  {
-    shiftWrite(MS1, HIGH); // Pulling all three high to get 1/16 step
-    shiftWrite(MS2, HIGH);
-    shiftWrite(MS3, HIGH);
-    step_mode = 'm';
-    //Serial.println("1/16 step set.");
-  }
-  else if (mode == 'e')
-  {
-    shiftWrite(MS1, HIGH); // Configuration for eighth step
-    shiftWrite(MS2, HIGH);
-    shiftWrite(MS3, LOW);
-    step_mode = 'e';
-    //Serial.println("1/8 step set.");
-  }
-  else if (mode == 'q')
-  {
-    shiftWrite(MS1, LOW); // Configuration for quarter step
-    shiftWrite(MS2, HIGH);
-    shiftWrite(MS3, LOW);
-    step_mode = 'q';
-    //Serial.println("1/4 step set.");
-  }
-  else if (mode == 'h')
-  {
-    shiftWrite(MS1, HIGH); // Configuration for half step
-    shiftWrite(MS2, LOW);
-    shiftWrite(MS3, LOW);
-    step_mode = 'h';
-    //Serial.println("1/2 step set.");
-  }
-  else if (mode == 'f')
-  {
-    shiftWrite(MS1, LOW); // Pulling all three low to full step
-    shiftWrite(MS2, LOW);
-    shiftWrite(MS3, LOW);
-    step_mode = 'f';
-    //Serial.println("Full step set.");
-  }
 }
