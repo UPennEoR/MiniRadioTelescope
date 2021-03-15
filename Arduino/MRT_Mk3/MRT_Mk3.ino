@@ -64,7 +64,7 @@ char last_command[numChars];
 boolean newData = false;
 
 unsigned long t1, t2, dt;
-unsigned long dt_loop = 4000; // microseconds; this should be fast
+unsigned long dt_loop = 2000; // microseconds; this should be fast
 unsigned long counter = 0;
 
 signed long az_steps = 0;
@@ -98,7 +98,9 @@ void setup() {
   pinMode(latchpin, OUTPUT);
   pinMode(ELIMIT, INPUT);
 
-  
+  // Disable the motors by default
+  digitalWrite(AZEN, HIGH);
+  digitalWrite(ELEN, HIGH);
 
   // Finally, open serial connection
   Serial.begin(115200); //Open Serial connection for debugging
