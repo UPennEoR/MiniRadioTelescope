@@ -64,7 +64,7 @@ char last_command[numChars];
 boolean newData = false;
 
 unsigned long t1, t2, dt;
-unsigned long dt_loop = 1000000; // microseconds; this should be fast
+unsigned long dt_loop = 4000; // microseconds; this should be fast
 unsigned long counter = 0;
 
 signed long az_steps = 0;
