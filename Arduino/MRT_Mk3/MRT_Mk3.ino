@@ -64,7 +64,7 @@ char last_command[numChars];
 boolean newData = false;
 
 unsigned long t1, t2, dt;
-unsigned long dt_loop = 2000; // microseconds; this should be fast
+unsigned long dt_loop = 1000000; // microseconds; this should be fast
 unsigned long counter = 0;
 
 signed long az_steps = 0;
@@ -120,110 +120,118 @@ void loop() {
   // If a new command has been sent, and we're not currently executing a command, then set various toggles to start doing stuff
   // This should be collected up into a singla ParseCommand function
   // Parse the command.  Basic error checking would make sure that right number of characters was sent
-  if (newData == true && executingCmd == false && NreceivedChars == 12) {
+  if (newData == true){
     
-    executingCmd = true;
-    
-    axis = receivedChars[0];
-    // Set pins based on the axis selected
-    // This should be a SetAxis command
-    // Enable the axis that's about to move
-    switch(axis){
-      case 'a': 
-        axindx = 0;
-        STP = AZSTP;
-        DIR = AZDIR;
-        MS1 = AZMS1;
-        MS2 = AZMS2;
-        MS3 = AZMS3;
-        EN = AZEN;
-        break;
-      case 'e': 
-        axindx = 1;
-        STP = ELSTP;
-        DIR = ELDIR;
-        MS1 = ELMS1;
-        MS2 = ELMS2;
-        MS3 = ELMS3;
-        EN = ELEN;
-        break;
-    }
-    digitalWrite(EN, LOW); // enable the axis
+    // Check to see if you've been told to abort
+    if (receivedChars[0] == 'X'){
 
-    sense = receivedChars[1];
-    switch(sense){
-      case '+':
-        shiftWrite(DIR, LOW);
-        sign = 1;
-        break;
-      case '-':
-        shiftWrite(DIR, HIGH);
-        sign = -1;
-        break;
-    }
-   
-    step_mode = receivedChars[2];
-    switch(step_mode){
+      Serial.println("Received abort");
+      n_steps_remaining = 0;
       
-      case 'm':
-        shiftWrite(MS1, HIGH); // Pulling all three high to get 1/16 step
-        shiftWrite(MS2, HIGH);
-        shiftWrite(MS3, HIGH);
-        step_size = 1;
-        break;
-        
-      case 'e':
-        shiftWrite(MS1, HIGH); // Configuration for eighth step
-        shiftWrite(MS2, HIGH);
-        shiftWrite(MS3, LOW);
-        step_size = 2;
-        break;
+    }  else if (executingCmd == false && NreceivedChars == 12) {
 
-      case 'q':
-        shiftWrite(MS1, LOW); // Configuration for quarter step
-        shiftWrite(MS2, HIGH);
-        shiftWrite(MS3, LOW);
-        step_size = 4;
-        break;
+      Serial.println("Received valid command");
+      
+      executingCmd = true;
+      
+      axis = receivedChars[0];
+      // Set pins based on the axis selected
+      // This should be a SetAxis command
+      // Enable the axis that's about to move
+      switch(axis){
+        case 'a': 
+          axindx = 0;
+          STP = AZSTP;
+          DIR = AZDIR;
+          MS1 = AZMS1;
+          MS2 = AZMS2;
+          MS3 = AZMS3;
+          EN = AZEN;
+          break;
+        case 'e': 
+          axindx = 1;
+          STP = ELSTP;
+          DIR = ELDIR;
+          MS1 = ELMS1;
+          MS2 = ELMS2;
+          MS3 = ELMS3;
+          EN = ELEN;
+          break;
+      }
+      digitalWrite(EN, LOW); // enable the axis
+  
+      sense = receivedChars[1];
+      switch(sense){
+        case '+':
+          shiftWrite(DIR, LOW);
+          sign = 1;
+          break;
+        case '-':
+          shiftWrite(DIR, HIGH);
+          sign = -1;
+          break;
+      }
+     
+      step_mode = receivedChars[2];
+      switch(step_mode){
         
-      case 'h':
-        shiftWrite(MS1, HIGH); // Configuration for half step
-        shiftWrite(MS2, LOW);
-        shiftWrite(MS3, LOW);
-        step_size = 8;
-        break;
-
-      case 'f':
-        shiftWrite(MS1, LOW); // Pulling all three low to full step
-        shiftWrite(MS2, LOW);
-        shiftWrite(MS3, LOW);
-        step_size = 16;
-        break; 
-        
+        case 'm':
+          shiftWrite(MS1, HIGH); // Pulling all three high to get 1/16 step
+          shiftWrite(MS2, HIGH);
+          shiftWrite(MS3, HIGH);
+          step_size = 1;
+          break;
+          
+        case 'e':
+          shiftWrite(MS1, HIGH); // Configuration for eighth step
+          shiftWrite(MS2, HIGH);
+          shiftWrite(MS3, LOW);
+          step_size = 2;
+          break;
+  
+        case 'q':
+          shiftWrite(MS1, LOW); // Configuration for quarter step
+          shiftWrite(MS2, HIGH);
+          shiftWrite(MS3, LOW);
+          step_size = 4;
+          break;
+          
+        case 'h':
+          shiftWrite(MS1, HIGH); // Configuration for half step
+          shiftWrite(MS2, LOW);
+          shiftWrite(MS3, LOW);
+          step_size = 8;
+          break;
+  
+        case 'f':
+          shiftWrite(MS1, LOW); // Pulling all three low to full step
+          shiftWrite(MS2, LOW);
+          shiftWrite(MS3, LOW);
+          step_size = 16;
+          break; 
+          
+      }
+      
+      // This seems very silly
+      for (i=0; i < Ncps_char-1; i++){
+        N_cch_char[i] = receivedChars[i+3];
+      }
+      N_cch_char[Ncps_char-1] = '\0';
+      for (i=0; i < Nstep_char-1; i++){
+        number_of_steps_char[i] = receivedChars[i+7];
+      }
+      number_of_steps_char[Nstep_char-1] = '\0';
+      
+      N_cch = atoi(N_cch_char);
+      number_of_steps = atoi(number_of_steps_char);
+  
+      n_half = N_cch;
+      n_steps_remaining = number_of_steps;
+      
+      
     }
-    
-    // This seems very silly
-    for (i=0; i < Ncps_char-1; i++){
-      N_cch_char[i] = receivedChars[i+3];
-    }
-    N_cch_char[Ncps_char-1] = '\0';
-    for (i=0; i < Nstep_char-1; i++){
-      number_of_steps_char[i] = receivedChars[i+7];
-    }
-    number_of_steps_char[Nstep_char-1] = '\0';
-    
-    N_cch = atoi(N_cch_char);
-    number_of_steps = atoi(number_of_steps_char);
-
-    n_half = N_cch;
-    n_steps_remaining = number_of_steps;
-    
-    newData = false;
-    
   }
-
-  // Write out the data for this loop
-  ReportState();
+  newData = false;
 
   if (n_steps_remaining > 0){
   
@@ -275,6 +283,9 @@ void loop() {
     executingCmd = false;
     
   }
+
+  // Write out the data for this loop
+  ReportState();
   
   // Increment the counter
   counter++;
