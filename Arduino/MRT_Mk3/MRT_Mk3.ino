@@ -58,7 +58,7 @@ int NreceivedChars = 0;
 
 
 const byte numChars = 32;
-char receivedChars[numChars];
+char receivedChars[numChars] = "xxxxxxxxxxxx";
 char last_command[numChars];
 
 boolean newData = false;
@@ -104,7 +104,7 @@ void setup() {
 
   // Finally, open serial connection
   Serial.begin(115200); //Open Serial connection for debugging
-  Serial.println("ARDUINO MRT Mk3");
+  //Serial.println("ARDUINO MRT Mk3");
 
 }
 
@@ -130,7 +130,7 @@ void loop() {
       
     }  else if (executingCmd == false && NreceivedChars == 12) {
 
-      Serial.println("Received valid command");
+      // Serial.println("Received valid command");
       
       executingCmd = true;
       
