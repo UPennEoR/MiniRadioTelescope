@@ -1,0 +1,24 @@
+{
+    "Header": {
+        "Comment": "All values are metric (mm)",
+        "CreationDate": "2022-01-05T17:58:09Z",
+        "GenerationSoftware": {
+            "Application": "EAGLE",
+            "Vendor": "Autodesk",
+            "Version": "9.6.2"
+        },
+        "Part": "Single"
+    },
+    "Overall": {
+        "BoardThickness": 1.57,
+        "LayerNumber": 2,
+        "Name": {
+            "ProjectId": "shield_draft"
+        },
+        "Owner": "Justin Bracks <justinbracks@gmail.com>",
+        "Size": {
+            "X": 94.92,
+            "Y": 105.4
+        }
+    }
+}
