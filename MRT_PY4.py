@@ -73,159 +73,160 @@ operate=True
 while(operate):
     var = input("Enter command to transmit, H for help, Q to quit: ")
     if not var == 'Q':
-        if (var == 'M'): # Make a map!
-            cs = mrtf.StdCmd(ser,mrtf.REPORT_STATE)
-            #az,el,pwr,mp,azi,eli = mrtf.RasterMap()
-            # Update the current state
-            current_state = mrtstate.state
-            #mrtf.PrintState()
-            mrtf.RasterMap()
-            current_state =  mrtf.StdCmd(ser,mrtf.REPORT_STATE)
-        elif (var == 'MS'): # Make a map of the South Sky
-            cs = mrtf.StdCmd(ser,mrtf.REPORT_STATE)
-            #az,el,pwr,mp,azi,eli = mrtf.ScanSouthSky(cs)
-            # Update the current state
-            current_state = mrtstate.state
-            mrtf.ScanSouthSky()
-            current_state =  mrtf.StdCmd(ser,mrtf.REPORT_STATE)
-        elif (var == 'G'):
-            cs = mrtf.StdCmd(ser,mrtf.REPORT_STATE)
-            current_state = mrtstate.state
-            mrtf.GoTo()
-            current_state =  mrtf.StdCmd(ser,mrtf.REPORT_STATE)
-        elif (var == 'H'):
-            mrtf.PrintMenu()
-        elif (var == 'CS'):
-            #print(mrtstate.state)
-            mrtf.PrintState()
-        elif (var == 'GA'):
-            cs = mrtf.StdCmd(ser,mrtf.REPORT_STATE)
-            current_state = mrtstate.state
-            mrtf.GoAz()
-            current_state =  mrtf.StdCmd(ser,mrtf.REPORT_STATE)
-        elif (var == 'GE'):
-            cs = mrtf.StdCmd(ser,mrtf.REPORT_STATE)
-            current_state = mrtstate.state
-            mrtf.GoEl()
-            current_state =  mrtf.StdCmd(ser,mrtf.REPORT_STATE)
-        elif (var == 'S'):
-            print ("Sending "+var)
-            ser.write(mrtf.SCAN)
-            deg = input("Enter number of degrees to turn: ")
-            print ("Sending "+deg)
-            ser.write(str.encode(deg))
-            print ("Reading data")
-            ndata = mrtf.readStream(ser)
-            current_state = mrtf.readState(ser)
-            mrtf.PrintState()
-            # Convert
-            #ndata = numpyState(ndata)
-            # Save
-            np.savez(file=time.ctime().replace(' ','_')+'.npz',
-                     ndata=ndata)
-            # Plot
-            mrtf.PlotData(ndata)
-        elif (var == 'E'):
-            print ("Sending "+var)
-            ser.write(mrtf.ENABLE)
-            current_state =  mrtf.StdCmd(ser,mrtf.REPORT_STATE)
-        elif (var == 'D'):
-            print ("Sending "+var)
-            ser.write(mrtf.DISABLE)
-            current_state =  mrtf.StdCmd(ser,mrtf.REPORT_STATE)
-        elif (var == 'ETGOHOME'):
-            print ("Sending "+var)
-            mrtf.ETGOHOME()
-            mrtf.PrintState()
-            newel = float(0.0)
-            curr_eloff = mrtstate.offsets['eloff']
-            arduino_el = mrtstate.state['elDeg'] + curr_eloff
-            mrtstate.offsets['eloff'] = arduino_el - newel
-            current_state =  mrtf.StdCmd(ser,mrtf.REPORT_STATE)
-            mrtf.PrintState()
-        elif (var == 'X'):
-            Ndatapts = input("Enter number of data points: ")
-            ser.write(mrtf.REPORT_STATE)
-            # Initialize the data variable
-            data = mrtf.readState(ser)
-            for i in np.arange(int(Ndatapts)-1):
-                ser.write(mrtf.REPORT_STATE)
+        match var:
+            case 'M': # Make a map!
+                cs = mrtf.StdCmd(ser,mrtf.REPORT_STATE)
+                #az,el,pwr,mp,azi,eli = mrtf.RasterMap()
+                # Update the current state
+                current_state = mrtstate.state
+                #mrtf.PrintState()
+                mrtf.RasterMap()
+                current_state =  mrtf.StdCmd(ser,mrtf.REPORT_STATE)
+            case 'MS': # Make a map of the South Sky
+                cs = mrtf.StdCmd(ser,mrtf.REPORT_STATE)
+                #az,el,pwr,mp,azi,eli = mrtf.ScanSouthSky(cs)
+                # Update the current state
+                current_state = mrtstate.state
+                mrtf.ScanSouthSky()
+                current_state =  mrtf.StdCmd(ser,mrtf.REPORT_STATE)
+            case 'G':
+                cs = mrtf.StdCmd(ser,mrtf.REPORT_STATE)
+                current_state = mrtstate.state
+                mrtf.GoTo()
+                current_state =  mrtf.StdCmd(ser,mrtf.REPORT_STATE)
+            case 'H':
+                mrtf.PrintMenu()
+            case 'CS':
+                #print(mrtstate.state)
+                mrtf.PrintState()
+            case 'GA':
+                cs = mrtf.StdCmd(ser,mrtf.REPORT_STATE)
+                current_state = mrtstate.state
+                mrtf.GoAz()
+                current_state =  mrtf.StdCmd(ser,mrtf.REPORT_STATE)
+            case 'GE':
+                cs = mrtf.StdCmd(ser,mrtf.REPORT_STATE)
+                current_state = mrtstate.state
+                mrtf.GoEl()
+                current_state =  mrtf.StdCmd(ser,mrtf.REPORT_STATE)
+            case 'S':
+                print ("Sending "+var)
+                ser.write(mrtf.SCAN)
+                deg = input("Enter number of degrees to turn: ")
+                print ("Sending "+deg)
+                ser.write(str.encode(deg))
+                print ("Reading data")
+                ndata = mrtf.readStream(ser)
                 current_state = mrtf.readState(ser)
                 mrtf.PrintState()
-                # Trick it by sending invalid commands and reading them back
-                #ser.write(REPORT_STATE)
+                # Convert
+                #ndata = numpyState(ndata)
+                # Save
+                np.savez(file=time.ctime().replace(' ','_')+'.npz',
+                        ndata=ndata)
+                # Plot
+                mrtf.PlotData(ndata)
+            case 'E':
+                print ("Sending "+var)
+                ser.write(mrtf.ENABLE)
+                current_state =  mrtf.StdCmd(ser,mrtf.REPORT_STATE)
+            case 'D':
+                print ("Sending "+var)
+                ser.write(mrtf.DISABLE)
+                current_state =  mrtf.StdCmd(ser,mrtf.REPORT_STATE)
+            case 'ETGOHOME':
+                print ("Sending "+var)
+                mrtf.ETGOHOME()
+                mrtf.PrintState()
+                newel = float(0.0)
+                curr_eloff = mrtstate.offsets['eloff']
+                arduino_el = mrtstate.state['elDeg'] + curr_eloff
+                mrtstate.offsets['eloff'] = arduino_el - newel
+                current_state =  mrtf.StdCmd(ser,mrtf.REPORT_STATE)
+                mrtf.PrintState()
+            case 'X':
+                Ndatapts = input("Enter number of data points: ")
+                ser.write(mrtf.REPORT_STATE)
+                # Initialize the data variable
+                data = mrtf.readState(ser)
+                for i in np.arange(int(Ndatapts)-1):
+                    ser.write(mrtf.REPORT_STATE)
+                    current_state = mrtf.readState(ser)
+                    mrtf.PrintState()
+                    # Trick it by sending invalid commands and reading them back
+                    #ser.write(REPORT_STATE)
+                    #read_ser_buffer_to_eot(ser)
+                    #dummy = readState(ser)
+                    #for key in data.keys():
+                    #    data[key].append(dummy[key][0])
+                #ndata = numpyState(data)
+                #PlotData(ndata)
+            case 'CCW':
+                mrtf.StdCmd(ser, mrtf.AZIMUTH)
+                mrtf.StdCmd(ser, mrtf.ENABLE)
+                mrtf.StdCmd(ser, mrtf.FORWARD)
+            case 'CW':
+                mrtf.StdCmd(ser, mrtf.AZIMUTH)
+                mrtf.StdCmd(ser, mrtf.ENABLE)
+                mrtf.StdCmd(ser, mrtf.REVERSE)
+            case 'UP':
+                mrtf.StdCmd(ser, mrtf.ELEVATION)
+                mrtf.StdCmd(ser, mrtf.ENABLE)
+                mrtf.StdCmd(ser, mrtf.FORWARD)
+            case 'DOWN':
+                mrtf.StdCmd(ser, mrtf.ELEVATION)
+                mrtf.StdCmd(ser, mrtf.ENABLE)
+                mrtf.StdCmd(ser, mrtf.REVERSE)
+            case 'SETPOS':
+                mrtf.PrintState()
+                newaz = float(input("New azimuth: "))
+                #print('Current azimuth', mrtstate.state['azDeg'])
+                curr_azoff = mrtstate.offsets['azoff']
+                #print('Current offset', curr_azoff)
+                arduino_az = mrtstate.state['azDeg'] + curr_azoff
+                mrtstate.offsets['azoff'] = arduino_az - newaz 
+                #print(mrtf.azoff)
+                newel = float(input("New elevation: "))
+                curr_eloff = mrtstate.offsets['eloff']
+                arduino_el = mrtstate.state['elDeg'] + curr_eloff
+                mrtstate.offsets['eloff'] = arduino_el - newel
+                current_state =  mrtf.StdCmd(ser,mrtf.REPORT_STATE)
+                mrtf.PrintState()
+            case 'S':
+                print ("Sending "+var)
+                ser.write(mrtf.SCAN)
+                deg = input("Enter number of degrees to turn: ")
+                print ("Sending "+deg)
+                ser.write(str.encode(deg))
+                print ("Reading data")
+                ndata = mrtf.readStream(ser)
+                current_state = mrtf.readState(ser)
+                mrtf.PrintState()
+                # Convert
+                #ndata = numpyState(ndata)
+                # Save
+                np.savez(file=time.ctime().replace(' ','_')+'.npz',
+                        ndata=ndata)
+                # Plot
+                mrtf.PlotData(ndata)
+            case 'X':
+                Ndatapts = input("Enter number of data points: ")
+                ser.write(mrtf.REPORT_STATE)
+                # Initialize the data variable
+                data = mrtf.readState(ser)
+                for i in np.arange(int(Ndatapts)-1):
+                    ser.write(mrtf.REPORT_STATE)
+                    current_state = mrtf.readState(ser)
+                    mrtf.PrintState()
+            case _:
+                # Commands that get passed along
+                print("Sending command direct to Arduino")
+                print ("Sending "+var)
+                ser.write(str.encode(var))
+                # Read back any reply
                 #read_ser_buffer_to_eot(ser)
-                #dummy = readState(ser)
-                #for key in data.keys():
-                #    data[key].append(dummy[key][0])
-            #ndata = numpyState(data)
-            #PlotData(ndata)
-        elif (var == 'CCW'):
-            mrtf.StdCmd(ser, mrtf.AZIMUTH)
-            mrtf.StdCmd(ser, mrtf.ENABLE)
-            mrtf.StdCmd(ser, mrtf.FORWARD)
-        elif (var == 'CW'):
-            mrtf.StdCmd(ser, mrtf.AZIMUTH)
-            mrtf.StdCmd(ser, mrtf.ENABLE)
-            mrtf.StdCmd(ser, mrtf.REVERSE)
-        elif (var == 'UP'):
-            mrtf.StdCmd(ser, mrtf.ELEVATION)
-            mrtf.StdCmd(ser, mrtf.ENABLE)
-            mrtf.StdCmd(ser, mrtf.FORWARD)
-        elif (var == 'DOWN'):
-            mrtf.StdCmd(ser, mrtf.ELEVATION)
-            mrtf.StdCmd(ser, mrtf.ENABLE)
-            mrtf.StdCmd(ser, mrtf.REVERSE)
-        elif (var == 'SETPOS'):
-            mrtf.PrintState()
-            newaz = float(input("New azimuth: "))
-            #print('Current azimuth', mrtstate.state['azDeg'])
-            curr_azoff = mrtstate.offsets['azoff']
-            #print('Current offset', curr_azoff)
-            arduino_az = mrtstate.state['azDeg'] + curr_azoff
-            mrtstate.offsets['azoff'] = arduino_az - newaz 
-            #print(mrtf.azoff)
-            newel = float(input("New elevation: "))
-            curr_eloff = mrtstate.offsets['eloff']
-            arduino_el = mrtstate.state['elDeg'] + curr_eloff
-            mrtstate.offsets['eloff'] = arduino_el - newel
-            current_state =  mrtf.StdCmd(ser,mrtf.REPORT_STATE)
-            mrtf.PrintState()
-        elif (var == 'S'):
-            print ("Sending "+var)
-            ser.write(mrtf.SCAN)
-            deg = input("Enter number of degrees to turn: ")
-            print ("Sending "+deg)
-            ser.write(str.encode(deg))
-            print ("Reading data")
-            ndata = mrtf.readStream(ser)
-            current_state = mrtf.readState(ser)
-            mrtf.PrintState()
-            # Convert
-            #ndata = numpyState(ndata)
-            # Save
-            np.savez(file=time.ctime().replace(' ','_')+'.npz',
-                     ndata=ndata)
-            # Plot
-            mrtf.PlotData(ndata)
-        elif (var == 'X'):
-            Ndatapts = input("Enter number of data points: ")
-            ser.write(mrtf.REPORT_STATE)
-            # Initialize the data variable
-            data = mrtf.readState(ser)
-            for i in np.arange(int(Ndatapts)-1):
-                ser.write(mrtf.REPORT_STATE)
                 current_state = mrtf.readState(ser)
                 mrtf.PrintState()
-        else:
-            # Commands that get passed along
-            print("Sending command direct to Arduino")
-            print ("Sending "+var)
-            ser.write(str.encode(var))
-            # Read back any reply
-            #read_ser_buffer_to_eot(ser)
-            current_state = mrtf.readState(ser)
-            mrtf.PrintState()
     else:
         operate = False
 
