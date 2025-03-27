@@ -30,5 +30,4 @@ This GitHub contains Arduino and Python code for the telescope.
 As of 5 April 2020, the working Arduino sketch is: MRTArduino (previously known as MRTv2)<br/>
 The python code for the Pi is MRT_PY4.py
 
-
 Hackaday was kind enough to do a write-up about this project: https://hackaday.com/2019/10/22/a-miniature-radio-telescope-in-every-backyard/
