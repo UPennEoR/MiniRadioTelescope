@@ -1,8 +1,8 @@
 This is the working version of the Arduino code as of 3/28/2025.  
 
 There are a couple of numbers that are hardcoed:
-- serial communication is at 115200 baud
-- loop rate is 4 ms (250 Hz)
+- serial communication is at 115200 baud `BAUD_RATE`
+- loop rate is 4 ms (250 Hz) `dt_loop`
 
 The basic idea is that the Arduino loop continuously sends a certain set of information, namely
 - the current counter value
