@@ -1,9 +1,18 @@
 /*
- It's not clear this code does the "right" thing when only part of the command is read on a given loop 
- Need to do more to reject ill-formed commands and clear the command buffer
- I think for this application, the writing out rate and the loop rate need to be the same, so that we get a new update on the state
- of the axis every time the step changes
+
+Most recent update 18 April 2025.
+
+ If the full command is not read in one dt_loop length time, I think the command just fails
+ This does not seem to happen a lot in practice
+ Ill-formed commands are simply ignored 
+ 
+ The data reporting rate and the maximum rate at which the motor steps can be changed are the same.  
+ Slower steps are possible with the "clock cycles per step" part of the command
  */
+
+ // ADC operation
+ int analogPin = 0;
+ float voltage;
 
 //Declare pin functions on Arduino DIO
 #define datapin 2
@@ -27,6 +36,8 @@
 //need this one for shift register
 byte data = 0;
 
+#define BAUD_RATE 115200
+
 //Variables that change which pin they they refer to depending on which axis is selected
 int STP;
 int DIR;
@@ -40,7 +51,19 @@ int EN;
 
   Axis / Sense / Microstep / Clock cycles per step / Number of steps
 
-  E/A  
+  Axis: "a" for azimuth or "e" for elevation
+
+  Sense: "+" or "-" defined as 
+    elevation: + = increasing elevation
+    azimtuth: + = CCW?
+
+  Microstep: "m", e, q, h, f: whether the motor controller microsteps or full steps (with gradations between)
+    Generally "m" is the right call for smooth operation.
+
+  Clock cycles per step: up to 4 chars, specifying an interger.  How many clock cycles (dt_loop) per motor step as set above.  0001 has the steps occurring as fast as
+    the loop executes; larger numbers will slow down the rate at which the steps are sent
+
+  Number of steps: up to 5 chars
  
  */
 
@@ -73,7 +96,8 @@ signed long steps[2] = {0,0};
 
 /* 
 need to have a protocol for what to do if we receive a new command while executing an existing one.
-for now, let's have it be blocking ...
+for now, let's have it be blocking ... tested that this does work.  Commands sent while others are executing are ignored.
+This means only one axis can move at a time, AND the overall control program needs to check if the command has completed.
 */
 boolean executingCmd = false; 
 
@@ -114,11 +138,16 @@ void loop() {
   // Get the current timestamp
   t1 = micros();
 
+  // Sample the ADC voltage
+  // Averaging 100 samples takes 15 ms, so 10 samples is feasibl. 20 takes more than 4 ms.
+  // Unclear whether averaging here really helps us, so could drop all the way to 1 if we had to.
+  voltage = ReadRadioADC(15);
+
   // Look for any new commands sent
   recvWithStartEndMarkers();
 
   // If a new command has been sent, and we're not currently executing a command, then set various toggles to start doing stuff
-  // This should be collected up into a singla ParseCommand function
+  // This should be collected up into a single ParseCommand function
   // Parse the command.  Basic error checking would make sure that right number of characters was sent
   if (newData == true){
     
@@ -360,6 +389,20 @@ void shiftWrite(int desiredPin, boolean desiredState)
   digitalWrite(latchpin, LOW); 
 }
 
+float ReadRadioADC(int ndata)
+{
+  int cnt, val;
+  voltage = 0.;
+  for(cnt= 1; cnt<ndata; cnt++)  
+  {
+    // Read the ADC for the radiometer
+    val = analogRead(analogPin);
+    voltage += 5.0*val/1024.;
+  }
+  voltage /= ndata;
+  return voltage;
+}
+
 void ReportState()
 {
     // Write out the data for this loop
@@ -379,7 +422,8 @@ void ReportState()
   //Serial.print(" ");
   //Serial.print(NreceivedChars);
   //Serial.print(" ");
-  Serial.print(receivedChars);
+  // This echoes the last command
+  // Serial.print(receivedChars);
   //Serial.print(" NSR ");
   //Serial.print(n_steps_remaining);
   //Serial.print(" FH ");
@@ -388,9 +432,15 @@ void ReportState()
   //Serial.print(transition);
   //Serial.print(" S ");
   //Serial.print(stepstate);
-  Serial.print(" AZ ");
+  // Serial.print(" AZ ");
   Serial.print(steps[0]);
-  Serial.print(" EL ");
-  Serial.println(steps[1]);
+  // Serial.print(" EL ");
+  Serial.print(" ");
+  Serial.print(steps[1]);
+  Serial.print(" ");
+  // Serial.print(" V ");
+  Serial.print(voltage, 4);
+  Serial.print(" ");
+  Serial.println(executingCmd);
 
 }
