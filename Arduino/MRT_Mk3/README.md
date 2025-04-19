@@ -1,4 +1,4 @@
-This is the working version of the Arduino code as of 3/28/2025.  
+This is the working version of the Arduino code as of 4/19/2025.  
 
 There are a couple of numbers that are hardcoed:
 - serial communication is at 115200 baud `BAUD_RATE`
@@ -7,11 +7,11 @@ There are a couple of numbers that are hardcoed:
 The basic idea is that the Arduino loop continuously sends a certain set of information, namely
 - the current counter value
 - the number of milliseconds to complete the loop
-- the last command sent
+- ~the last command sent~
 - the current azimuth in motor microsteps (convertible but not converted to angle)
 - the current elevation in motor microsteps (convertible but not converted to angle)
-
-** The analog voltage is not reported **
+- the analog voltage at the AIN0 input
+- a toggle bit for whether a (move) command is currently executing
 
 Commands are 12 characters long and must be enclosed in <> as `<xxxxxxxxxxxx>`
 
@@ -24,6 +24,14 @@ Axis / Sense / Microstep / Clock cycles per step / Number of steps
 2: m: 1/16, e: 1/8 q: 1/4 h: 1/2 f: 1
 3 - 6: the number of clock cycles 
 7 - 11: number of steps.  This sets the max at one go to 99999
+
+The C code necessary to read the Arduino output:
+
+Install hdf5:
+sudo apt install libhdf5-dev
+sudo apt install hdf5-tools
+
+
 
 
 
